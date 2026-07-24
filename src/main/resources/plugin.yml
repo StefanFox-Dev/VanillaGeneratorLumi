@@ -1,0 +1,5 @@
+name: VanillaGeneratorLumi
+version: 1.0.0
+main: aeza.vanilla.VanillaGeneratorLumi
+author: Antigravity
+api: ["1.0.0"]
