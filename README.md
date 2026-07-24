@@ -86,4 +86,3 @@ gradlew.bat shadowJar
 
 ## 🛠 Авторство
 * **Автор**: Community
-* **Разработано с помощью**: Antigravity AI
