@@ -16,12 +16,17 @@ public class CustomBiomeSelector {
 
     private static final Biome CHERRY_GROVE_BIOME = new CherryGroveBiome();
 
+    public CustomBiomeSelector(long seed) {
+        NukkitRandom rand = new NukkitRandom(seed);
+        this.temperature = new SimplexF(rand, 2F, 1F / 8F, 1F / 2048f);
+        this.rainfall = new SimplexF(rand, 2F, 1F / 8F, 1F / 2048f);
+        this.river = new SimplexF(rand, 6f, 2 / 4f, 1 / 1024f);
+        this.ocean = new SimplexF(rand, 6f, 2 / 4f, 1 / 2048f);
+        this.hills = new SimplexF(rand, 2f, 2 / 4f, 1 / 2048f);
+    }
+
     public CustomBiomeSelector(NukkitRandom random) {
-        this.temperature = new SimplexF(random, 2F, 1F / 8F, 1F / 2048f);
-        this.rainfall = new SimplexF(random, 2F, 1F / 8F, 1F / 2048f);
-        this.river = new SimplexF(random, 6f, 2 / 4f, 1 / 1024f);
-        this.ocean = new SimplexF(random, 6f, 2 / 4f, 1 / 2048f);
-        this.hills = new SimplexF(random, 2f, 2 / 4f, 1 / 2048f);
+        this(random.getSeed());
     }
 
     public Biome pickBiome(int x, int z) {
@@ -39,84 +44,57 @@ public class CustomBiomeSelector {
         }
 
         // Rivers
-        if (Math.abs(noiseRiver) < 0.035f) {
-            return temperature < -0.4f ? EnumBiome.FROZEN_RIVER.biome : EnumBiome.RIVER.biome;
+        if (noiseRiver > -0.05f && noiseRiver < 0.05f) {
+            if (temperature < -0.4f) {
+                return EnumBiome.FROZEN_RIVER.biome;
+            }
+            return EnumBiome.RIVER.biome;
         }
 
-        float hills = this.hills.noise2D(x, z, true);
+        float hillNoise = hills.noise2D(x, z, true);
 
-        // Beaches
-        if (noiseOcean < -0.15f) {
-            return temperature < -0.379f ? EnumBiome.COLD_BEACH.biome : EnumBiome.BEACH.biome;
-        }
-
-        // 🏜 BADLANDS / MESA: Dry hot land, strictly above sea level
-        if (temperature > 0.4f && rainfall < -0.15f && noiseOcean >= -0.10f) {
-            return hills > 0.1f ? EnumBiome.MESA_PLATEAU.biome : EnumBiome.MESA.biome;
-        }
-
-        // 🌸 CHERRY GROVE: High mountain slopes & plateaus in temperate climate (Vanilla rarity)
-        if (hills > 0.38f && temperature >= -0.2f && temperature < 0.35f && rainfall > 0.0f) {
+        // Cherry Grove: Spawns on high mountain slopes & plateaus with vanilla rarity
+        if (hillNoise > 0.38f && temperature > -0.2f && temperature < 0.45f && rainfall > 0.1f) {
             return CHERRY_GROVE_BIOME;
         }
 
-        // HIGH ELEVATION: MOUNTAINS & PEAKS (hills > 0.25f)
-        if (hills > 0.25f) {
-            if (temperature < -0.379f) {
+        // Mountains / Hills
+        if (hillNoise > 0.40f) {
+            if (temperature < -0.3f) {
                 return EnumBiome.ICE_MOUNTAINS.biome;
-            }
-            if (rainfall > 0.2f) {
-                return EnumBiome.EXTREME_HILLS_PLUS.biome;
             }
             return EnumBiome.EXTREME_HILLS.biome;
         }
 
-        // MODERATE ELEVATION: WOODED HILLS (hills > 0.05f)
-        if (hills > 0.05f) {
-            if (temperature < -0.379f) {
-                return EnumBiome.COLD_TAIGA_HILLS.biome;
+        // Biome climate selection
+        if (temperature < -0.4f) {
+            if (rainfall < 0f) {
+                return EnumBiome.ICE_PLAINS.biome;
             }
-            if (rainfall > 0.3f) {
-                return EnumBiome.FOREST_HILLS.biome;
-            }
-            return EnumBiome.TAIGA_HILLS.biome;
-        }
-
-        // LOW ELEVATION: PLAINS, FORESTS, DESERTS, SAVANNAS & TAIGAS
-        if (temperature < -0.379f) {
-            return EnumBiome.ICE_PLAINS.biome;
-        }
-
-        if (temperature < 0.2f) {
-            if (rainfall < -0.1f) {
-                return EnumBiome.PLAINS.biome;
-            }
-            if (rainfall < 0.3f) {
-                return EnumBiome.SUNFLOWER_PLAINS.biome;
-            }
-            return EnumBiome.TAIGA.biome;
-        }
-
-        if (temperature < 0.5f) {
+            return EnumBiome.COLD_TAIGA.biome;
+        } else if (temperature < 0.1f) {
             if (rainfall < -0.2f) {
                 return EnumBiome.PLAINS.biome;
+            } else if (rainfall < 0.3f) {
+                return EnumBiome.TAIGA.biome;
             }
-            if (rainfall < 0.1f) {
+            return EnumBiome.FOREST.biome;
+        } else if (temperature < 0.6f) {
+            if (rainfall < -0.4f) {
+                return EnumBiome.DESERT.biome;
+            } else if (rainfall < 0.2f) {
+                return EnumBiome.PLAINS.biome;
+            } else if (rainfall < 0.5f) {
                 return EnumBiome.FOREST.biome;
             }
-            if (rainfall < 0.4f) {
-                return EnumBiome.BIRCH_FOREST.biome;
-            }
             return EnumBiome.SWAMP.biome;
-        }
-
-        // Hot climate
-        if (rainfall < 0f) {
-            return EnumBiome.DESERT.biome;
-        }
-        if (rainfall > 0.3f) {
+        } else {
+            if (rainfall < -0.2f) {
+                return EnumBiome.DESERT.biome;
+            } else if (rainfall < 0.2f) {
+                return EnumBiome.SAVANNA.biome;
+            }
             return EnumBiome.JUNGLE.biome;
         }
-        return EnumBiome.SAVANNA.biome;
     }
 }

@@ -1,11 +1,19 @@
 package aeza.vanilla.generator.noise;
 
-import cn.nukkit.math.NukkitRandom;
+import java.util.Random;
+import java.util.SplittableRandom;
 
 public class SimplexOctaveGenerator {
     private final SimplexNoise[] octaves;
 
-    public SimplexOctaveGenerator(NukkitRandom random, int octaves) {
+    public SimplexOctaveGenerator(Random random, int octaves) {
+        this.octaves = new SimplexNoise[octaves];
+        for (int i = 0; i < octaves; ++i) {
+            this.octaves[i] = new SimplexNoise(random);
+        }
+    }
+
+    public SimplexOctaveGenerator(SplittableRandom random, int octaves) {
         this.octaves = new SimplexNoise[octaves];
         for (int i = 0; i < octaves; ++i) {
             this.octaves[i] = new SimplexNoise(random);

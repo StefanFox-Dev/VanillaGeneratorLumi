@@ -1,10 +1,11 @@
 package aeza.vanilla.generator.noise;
 
-import cn.nukkit.math.NukkitRandom;
+import java.util.Random;
+import java.util.SplittableRandom;
 
 public class PerlinNoise extends NoiseGenerator {
 
-    public PerlinNoise(NukkitRandom random) {
+    public PerlinNoise(Random random) {
         this.offsetX = random.nextFloat() * 256.0;
         this.offsetY = random.nextFloat() * 256.0;
         this.offsetZ = random.nextFloat() * 256.0;
@@ -13,7 +14,24 @@ public class PerlinNoise extends NoiseGenerator {
             perm[i] = i;
         }
         for (int i = 0; i < 256; ++i) {
-            int pos = random.nextBoundedInt(256 - i) + i;
+            int pos = random.nextInt(256 - i) + i;
+            int old = perm[i];
+            perm[i] = perm[pos];
+            perm[pos] = old;
+            perm[i + 256] = perm[i];
+        }
+    }
+
+    public PerlinNoise(SplittableRandom random) {
+        this.offsetX = random.nextDouble() * 256.0;
+        this.offsetY = random.nextDouble() * 256.0;
+        this.offsetZ = random.nextDouble() * 256.0;
+
+        for (int i = 0; i < 256; ++i) {
+            perm[i] = i;
+        }
+        for (int i = 0; i < 256; ++i) {
+            int pos = random.nextInt(256 - i) + i;
             int old = perm[i];
             perm[i] = perm[pos];
             perm[pos] = old;
@@ -62,9 +80,8 @@ public class PerlinNoise extends NoiseGenerator {
 
     protected double[] get3dNoise(double[] noise, double x, double y, double z, int sizeX, int sizeY, int sizeZ, double scaleX, double scaleY, double scaleZ, double amplitude) {
         int index = 0;
-        int total = sizeX * sizeY * sizeZ;
-        if (noise == null || noise.length < total) {
-            noise = new double[total];
+        if (noise == null || noise.length < sizeX * sizeY * sizeZ) {
+            noise = new double[sizeX * sizeY * sizeZ];
         }
         for (int i = 0; i < sizeX; ++i) {
             double dx = x + offsetX + i * scaleX;

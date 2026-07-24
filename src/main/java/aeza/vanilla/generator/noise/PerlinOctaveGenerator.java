@@ -1,12 +1,20 @@
 package aeza.vanilla.generator.noise;
 
-import cn.nukkit.math.NukkitRandom;
 import java.util.Arrays;
+import java.util.Random;
+import java.util.SplittableRandom;
 
 public class PerlinOctaveGenerator {
     private final PerlinNoise[] octaves;
 
-    public PerlinOctaveGenerator(NukkitRandom random, int octaves) {
+    public PerlinOctaveGenerator(Random random, int octaves) {
+        this.octaves = new PerlinNoise[octaves];
+        for (int i = 0; i < octaves; ++i) {
+            this.octaves[i] = new PerlinNoise(random);
+        }
+    }
+
+    public PerlinOctaveGenerator(SplittableRandom random, int octaves) {
         this.octaves = new PerlinNoise[octaves];
         for (int i = 0; i < octaves; ++i) {
             this.octaves[i] = new PerlinNoise(random);

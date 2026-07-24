@@ -3,7 +3,6 @@ package aeza.vanilla.generator.cave;
 import aeza.vanilla.generator.noise.SimplexOctaveGenerator;
 import cn.nukkit.block.BlockID;
 import cn.nukkit.level.format.FullChunk;
-import cn.nukkit.math.NukkitRandom;
 
 import java.util.SplittableRandom;
 
@@ -18,13 +17,11 @@ public class CaveGenerator {
     private static final int MAX_CAVE_Y = 55;
 
     private final long seed;
-    private final NukkitRandom random;
     private final SimplexOctaveGenerator flowNoise;
 
     public CaveGenerator(long seed) {
         this.seed = seed;
-        this.random = new NukkitRandom(seed);
-        NukkitRandom flowRand = new NukkitRandom(seed + 11);
+        SplittableRandom flowRand = new SplittableRandom(seed + 11);
         this.flowNoise = new SimplexOctaveGenerator(flowRand, 3);
     }
 
@@ -100,34 +97,44 @@ public class CaveGenerator {
         int radiusY = CAVERN_SIZE_MIN + rng.nextInt(CAVERN_SIZE_MAX - CAVERN_SIZE_MIN) / 2;
         int radiusZ = CAVERN_SIZE_MIN + rng.nextInt(CAVERN_SIZE_MAX - CAVERN_SIZE_MIN);
 
-        int minX = centerX - radiusX;
-        int maxX = centerX + radiusX;
-        int minY = Math.max(MIN_CAVE_Y, centerY - radiusY);
-        int maxY = Math.min(MAX_CAVE_Y, centerY + radiusY);
-        int minZ = centerZ - radiusZ;
-        int maxZ = centerZ + radiusZ;
+        carveEllipsoid(chunk, centerX, centerY, centerZ, radiusX, radiusY, radiusZ, targetChunkX, targetChunkZ);
+    }
 
-        int targetBaseX = targetChunkX << 4;
-        int targetBaseZ = targetChunkZ << 4;
+    private void carveSphere(FullChunk chunk, int centerX, int centerY, int centerZ, float radius, int targetChunkX, int targetChunkZ) {
+        int minX = (int) Math.floor(centerX - radius);
+        int maxX = (int) Math.ceil(centerX + radius);
+        int minY = Math.max(1, (int) Math.floor(centerY - radius));
+        int maxY = Math.min(250, (int) Math.ceil(centerY + radius));
+        int minZ = (int) Math.floor(centerZ - radius);
+        int maxZ = (int) Math.ceil(centerZ + radius);
 
-        for (int bx = minX; bx <= maxX; bx++) {
-            if (bx < targetBaseX || bx >= targetBaseX + 16) continue;
-            double dx = (bx - centerX) / (double) radiusX;
+        int chunkMinX = targetChunkX << 4;
+        int chunkMaxX = chunkMinX + 15;
+        int chunkMinZ = targetChunkZ << 4;
+        int chunkMaxZ = chunkMinZ + 15;
 
-            for (int bz = minZ; bz <= maxZ; bz++) {
-                if (bz < targetBaseZ || bz >= targetBaseZ + 16) continue;
-                double dz = (bz - centerZ) / (double) radiusZ;
+        if (maxX < chunkMinX || minX > chunkMaxX || maxZ < chunkMinZ || minZ > chunkMaxZ) {
+            return;
+        }
 
-                for (int by = minY; by <= maxY; by++) {
-                    double dy = (by - centerY) / (double) radiusY;
+        float radiusSq = radius * radius;
 
-                    if (dx * dx + dy * dy + dz * dz <= 1.0) {
-                        int localX = bx & 15;
-                        int localZ = bz & 15;
-                        int currentBlock = chunk.getBlockId(localX, by, localZ);
+        for (int x = Math.max(minX, chunkMinX); x <= Math.min(maxX, chunkMaxX); x++) {
+            float dx = x - centerX;
+            float dxSq = dx * dx;
+            int localX = x & 0x0f;
 
-                        if (currentBlock != BlockID.BEDROCK && currentBlock != BlockID.WATER && currentBlock != BlockID.STILL_WATER) {
-                            chunk.setBlockId(localX, by, localZ, BlockID.AIR);
+            for (int z = Math.max(minZ, chunkMinZ); z <= Math.min(maxZ, chunkMaxZ); z++) {
+                float dz = z - centerZ;
+                float dzSq = dz * dz;
+                int localZ = z & 0x0f;
+
+                for (int y = minY; y <= maxY; y++) {
+                    float dy = y - centerY;
+                    if (dxSq + dy * dy + dzSq <= radiusSq) {
+                        int cur = chunk.getBlockId(localX, y, localZ);
+                        if (cur == BlockID.STONE || cur == BlockID.DIRT || cur == BlockID.GRAVEL || cur == BlockID.GRASS || cur == BlockID.SAND || cur == BlockID.SANDSTONE || cur == BlockID.DEEPSLATE) {
+                            chunk.setBlockId(localX, y, localZ, BlockID.AIR);
                         }
                     }
                 }
@@ -135,37 +142,39 @@ public class CaveGenerator {
         }
     }
 
-    private void carveSphere(FullChunk chunk, int cx, int cy, int cz, float radius, int targetChunkX, int targetChunkZ) {
-        int r = (int) Math.ceil(radius);
-        int minX = cx - r;
-        int maxX = cx + r;
-        int minY = Math.max(MIN_CAVE_Y, cy - r);
-        int maxY = Math.min(MAX_CAVE_Y, cy + r);
-        int minZ = cz - r;
-        int maxZ = cz + r;
+    private void carveEllipsoid(FullChunk chunk, int centerX, int centerY, int centerZ, float radX, float radY, float radZ, int targetChunkX, int targetChunkZ) {
+        int minX = (int) Math.floor(centerX - radX);
+        int maxX = (int) Math.ceil(centerX + radX);
+        int minY = Math.max(1, (int) Math.floor(centerY - radY));
+        int maxY = Math.min(250, (int) Math.ceil(centerY + radY));
+        int minZ = (int) Math.floor(centerZ - radZ);
+        int maxZ = (int) Math.ceil(centerZ + radZ);
 
-        int targetBaseX = targetChunkX << 4;
-        int targetBaseZ = targetChunkZ << 4;
-        float rSq = radius * radius;
+        int chunkMinX = targetChunkX << 4;
+        int chunkMaxX = chunkMinX + 15;
+        int chunkMinZ = targetChunkZ << 4;
+        int chunkMaxZ = chunkMinZ + 15;
 
-        for (int bx = minX; bx <= maxX; bx++) {
-            if (bx < targetBaseX || bx >= targetBaseX + 16) continue;
-            int dx = bx - cx;
+        if (maxX < chunkMinX || minX > chunkMaxX || maxZ < chunkMinZ || minZ > chunkMaxZ) {
+            return;
+        }
 
-            for (int bz = minZ; bz <= maxZ; bz++) {
-                if (bz < targetBaseZ || bz >= targetBaseZ + 16) continue;
-                int dz = bz - cz;
+        for (int x = Math.max(minX, chunkMinX); x <= Math.min(maxX, chunkMaxX); x++) {
+            float dx = (x - centerX) / radX;
+            float dxSq = dx * dx;
+            int localX = x & 0x0f;
 
-                for (int by = minY; by <= maxY; by++) {
-                    int dy = by - cy;
+            for (int z = Math.max(minZ, chunkMinZ); z <= Math.min(maxZ, chunkMaxZ); z++) {
+                float dz = (z - centerZ) / radZ;
+                float dzSq = dz * dz;
+                int localZ = z & 0x0f;
 
-                    if (dx * dx + dy * dy + dz * dz <= rSq) {
-                        int localX = bx & 15;
-                        int localZ = bz & 15;
-                        int currentBlock = chunk.getBlockId(localX, by, localZ);
-
-                        if (currentBlock != BlockID.BEDROCK && currentBlock != BlockID.WATER && currentBlock != BlockID.STILL_WATER) {
-                            chunk.setBlockId(localX, by, localZ, BlockID.AIR);
+                for (int y = minY; y <= maxY; y++) {
+                    float dy = (y - centerY) / radY;
+                    if (dxSq + dy * dy + dzSq <= 1.0f) {
+                        int cur = chunk.getBlockId(localX, y, localZ);
+                        if (cur == BlockID.STONE || cur == BlockID.DIRT || cur == BlockID.GRAVEL || cur == BlockID.GRASS || cur == BlockID.SAND || cur == BlockID.SANDSTONE || cur == BlockID.DEEPSLATE) {
+                            chunk.setBlockId(localX, y, localZ, BlockID.AIR);
                         }
                     }
                 }

@@ -1,24 +1,24 @@
 package aeza.vanilla.generator.biomegrid;
 
 import aeza.vanilla.generator.Environment;
-import cn.nukkit.math.NukkitRandom;
+
+import java.util.SplittableRandom;
 
 public abstract class MapLayer {
-    protected final NukkitRandom random;
+    protected SplittableRandom random;
     protected final long seed;
 
     public MapLayer(long seed) {
-        this.random = new NukkitRandom();
         this.seed = seed;
+        this.random = new SplittableRandom(seed);
     }
 
     public void setCoordsSeed(int x, int z) {
-        random.setSeed(seed);
-        random.setSeed(x * random.nextInt() + z * random.nextInt() ^ seed);
+        this.random = new SplittableRandom(x * 341873128712L + z * 132897987541L ^ seed);
     }
 
     public int nextInt(int max) {
-        return random.nextBoundedInt(max);
+        return random.nextInt(max);
     }
 
     public abstract int[] generateValues(int x, int z, int sizeX, int sizeZ);

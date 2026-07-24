@@ -1,6 +1,7 @@
 package aeza.vanilla.generator.noise;
 
-import cn.nukkit.math.NukkitRandom;
+import java.util.Random;
+import java.util.SplittableRandom;
 
 public class SimplexNoise extends NoiseGenerator {
     protected static final double SQRT_3 = Math.sqrt(3.0);
@@ -15,7 +16,7 @@ public class SimplexNoise extends NoiseGenerator {
             {0, 1, 1}, {0, -1, 1}, {0, 1, -1}, {0, -1, -1}
     };
 
-    public SimplexNoise(NukkitRandom random) {
+    public SimplexNoise(Random random) {
         this.offsetX = random.nextFloat() * 256.0;
         this.offsetY = random.nextFloat() * 256.0;
         this.offsetZ = random.nextFloat() * 256.0;
@@ -24,7 +25,24 @@ public class SimplexNoise extends NoiseGenerator {
             perm[i] = i;
         }
         for (int i = 0; i < 256; ++i) {
-            int pos = random.nextBoundedInt(256 - i) + i;
+            int pos = random.nextInt(256 - i) + i;
+            int old = perm[i];
+            perm[i] = perm[pos];
+            perm[pos] = old;
+            perm[i + 256] = perm[i];
+        }
+    }
+
+    public SimplexNoise(SplittableRandom random) {
+        this.offsetX = random.nextDouble() * 256.0;
+        this.offsetY = random.nextDouble() * 256.0;
+        this.offsetZ = random.nextDouble() * 256.0;
+
+        for (int i = 0; i < 256; ++i) {
+            perm[i] = i;
+        }
+        for (int i = 0; i < 256; ++i) {
+            int pos = random.nextInt(256 - i) + i;
             int old = perm[i];
             perm[i] = perm[pos];
             perm[pos] = old;
@@ -60,27 +78,14 @@ public class SimplexNoise extends NoiseGenerator {
         int gi1 = perm[ii + i1 + perm[jj + j1]] % 12;
         int gi2 = perm[ii + 1 + perm[jj + 1]] % 12;
 
-        double n0, n1, n2;
         double t0 = 0.5 - x0 * x0 - y0 * y0;
-        if (t0 < 0) n0 = 0.0;
-        else {
-            t0 *= t0;
-            n0 = t0 * t0 * (GRAD_3[gi0][0] * x0 + GRAD_3[gi0][1] * y0);
-        }
+        double n0 = (t0 < 0) ? 0.0 : Math.pow(t0, 4) * (GRAD_3[gi0][0] * x0 + GRAD_3[gi0][1] * y0);
 
         double t1 = 0.5 - x1 * x1 - y1 * y1;
-        if (t1 < 0) n1 = 0.0;
-        else {
-            t1 *= t1;
-            n1 = t1 * t1 * (GRAD_3[gi1][0] * x1 + GRAD_3[gi1][1] * y1);
-        }
+        double n1 = (t1 < 0) ? 0.0 : Math.pow(t1, 4) * (GRAD_3[gi1][0] * x1 + GRAD_3[gi1][1] * y1);
 
         double t2 = 0.5 - x2 * x2 - y2 * y2;
-        if (t2 < 0) n2 = 0.0;
-        else {
-            t2 *= t2;
-            n2 = t2 * t2 * (GRAD_3[gi2][0] * x2 + GRAD_3[gi2][1] * y2);
-        }
+        double n2 = (t2 < 0) ? 0.0 : Math.pow(t2, 4) * (GRAD_3[gi2][0] * x2 + GRAD_3[gi2][1] * y2);
 
         return 70.0 * (n0 + n1 + n2);
     }

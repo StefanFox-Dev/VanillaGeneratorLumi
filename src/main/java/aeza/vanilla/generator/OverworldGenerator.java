@@ -40,7 +40,7 @@ public class OverworldGenerator extends Normal {
     @Override
     public void init(ChunkManager level, NukkitRandom random) {
         super.init(level, random);
-        this.customSelector = new CustomBiomeSelector(random);
+        this.customSelector = new CustomBiomeSelector(level.getSeed());
         this.caveGenerator = new CaveGenerator(level.getSeed());
         this.structurePopulator = new StructurePopulator();
         this.oceanPopulator = new OceanPopulator();
@@ -63,22 +63,22 @@ public class OverworldGenerator extends Normal {
 
         var chunk = getChunkManager().getChunk(chunkX, chunkZ);
         if (chunk != null) {
-            int baseX = chunkX << 4;
-            int baseZ = chunkZ << 4;
-
-            // Write custom biome IDs (including Cherry Grove ID 182) directly into chunk memory
             if (this.customSelector != null) {
                 for (int x = 0; x < 16; x++) {
                     for (int z = 0; z < 16; z++) {
-                        Biome b = this.customSelector.pickBiome(baseX + x, baseZ + z);
-                        if (b != null) {
-                            chunk.setBiomeId(x, z, b.getId());
+                        int worldX = (chunkX << 4) + x;
+                        int worldZ = (chunkZ << 4) + z;
+                        Biome picked = this.customSelector.pickBiome(worldX, worldZ);
+                        if (picked != null) {
+                            chunk.setBiomeId(x, z, picked.getId());
                         }
                     }
                 }
             }
 
-            this.caveGenerator.carveDirectly(chunk, chunkX, chunkZ);
+            if (this.caveGenerator != null) {
+                this.caveGenerator.carveDirectly(chunk, chunkX, chunkZ);
+            }
         }
     }
 
@@ -88,7 +88,8 @@ public class OverworldGenerator extends Normal {
 
         var chunk = getChunkManager().getChunk(chunkX, chunkZ);
         if (chunk != null) {
-            SplittableRandom random = new SplittableRandom(getChunkManager().getSeed() ^ (chunkX * 341873128712L + chunkZ * 132897987541L));
+            long chunkSeed = getChunkManager().getSeed() ^ (chunkX * 341873128712L + chunkZ * 132897987541L);
+            SplittableRandom random = new SplittableRandom(chunkSeed);
 
             this.cherryGrovePopulator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);
             this.bambooPopulator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);
