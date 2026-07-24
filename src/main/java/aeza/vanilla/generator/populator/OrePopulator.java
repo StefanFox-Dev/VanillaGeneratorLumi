@@ -5,7 +5,6 @@ import aeza.vanilla.generator.object.OreVein;
 import cn.nukkit.block.BlockID;
 import cn.nukkit.level.ChunkManager;
 import cn.nukkit.level.format.FullChunk;
-import cn.nukkit.math.NukkitRandom;
 
 import java.util.SplittableRandom;
 
@@ -34,14 +33,13 @@ public class OrePopulator extends Populator {
     public void populate(ChunkManager world, SplittableRandom random, int chunkX, int chunkZ, FullChunk chunk) {
         int baseX = chunkX << 4;
         int baseZ = chunkZ << 4;
-        NukkitRandom nukkitRand = new NukkitRandom(random.nextLong());
 
         for (OreType ore : ores) {
             for (int i = 0; i < ore.clusterCount; ++i) {
                 int x = baseX + random.nextInt(16);
                 int y = ore.minY + random.nextInt(Math.max(1, ore.maxY - ore.minY));
                 int z = baseZ + random.nextInt(16);
-                new OreVein(ore).generate(world, nukkitRand, x, y, z);
+                new OreVein(ore).generate(world, random, x, y, z);
             }
         }
     }

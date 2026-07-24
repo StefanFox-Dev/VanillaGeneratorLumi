@@ -2,7 +2,8 @@ package aeza.vanilla.generator.object;
 
 import cn.nukkit.block.BlockID;
 import cn.nukkit.level.ChunkManager;
-import cn.nukkit.math.NukkitRandom;
+
+import java.util.SplittableRandom;
 
 public class TallGrass extends TerrainObject {
     private final int meta;
@@ -12,13 +13,13 @@ public class TallGrass extends TerrainObject {
     }
 
     public TallGrass() {
-        this(1); // Fern or tall grass
+        this(1);
     }
 
     @Override
-    public boolean generate(ChunkManager world, NukkitRandom random, int x, int y, int z) {
+    public boolean generate(ChunkManager world, SplittableRandom random, int x, int y, int z) {
         int groundId = world.getBlockIdAt(x, y - 1, z);
-        if ((groundId == BlockID.GRASS || groundId == BlockID.DIRT) && world.getBlockIdAt(x, y, z) == BlockID.AIR) {
+        if (groundId == BlockID.GRASS && world.getBlockIdAt(x, y, z) == BlockID.AIR) {
             world.setBlockAt(x, y, z, BlockID.TALL_GRASS, meta);
             return true;
         }

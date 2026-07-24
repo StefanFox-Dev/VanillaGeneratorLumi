@@ -1,10 +1,11 @@
 package aeza.vanilla.generator.object.tree;
 
 import cn.nukkit.block.BlockID;
-import cn.nukkit.math.NukkitRandom;
+
+import java.util.SplittableRandom;
 
 public class AcaciaTree extends GenericTree {
-    public AcaciaTree(NukkitRandom random) {
+    public AcaciaTree(SplittableRandom random) {
         super(random);
         this.logId = BlockID.ACACIA_LOG;
         this.logMeta = 0; // Acacia

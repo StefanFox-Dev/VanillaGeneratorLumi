@@ -3,7 +3,8 @@ package aeza.vanilla.generator.object.tree;
 import aeza.vanilla.generator.object.TerrainObject;
 import cn.nukkit.block.BlockID;
 import cn.nukkit.level.ChunkManager;
-import cn.nukkit.math.NukkitRandom;
+
+import java.util.SplittableRandom;
 
 public class GenericTree extends TerrainObject {
     protected int height;
@@ -12,18 +13,18 @@ public class GenericTree extends TerrainObject {
     protected int leavesId = BlockID.LEAVES;
     protected int leavesMeta = 0;
 
-    public GenericTree(NukkitRandom random) {
-        this.height = random.nextBoundedInt(3) + 4;
+    public GenericTree(SplittableRandom random) {
+        this.height = random.nextInt(3) + 4;
     }
 
     public boolean canFit(ChunkManager world, int x, int y, int z) {
         if (y < 1 || y + height + 1 >= 256) return false;
         int targetId = world.getBlockIdAt(x, y - 1, z);
-        return targetId == BlockID.GRASS || targetId == BlockID.DIRT;
+        return targetId == BlockID.GRASS || targetId == BlockID.DIRT || targetId == BlockID.PODZOL;
     }
 
     @Override
-    public boolean generate(ChunkManager world, NukkitRandom random, int x, int y, int z) {
+    public boolean generate(ChunkManager world, SplittableRandom random, int x, int y, int z) {
         if (!canFit(world, x, y, z)) return false;
 
         for (int yy = y - 3 + height; yy <= y + height; ++yy) {
@@ -33,7 +34,7 @@ public class GenericTree extends TerrainObject {
                 int offX = xx - x;
                 for (int zz = z - radius; zz <= z + radius; ++zz) {
                     int offZ = zz - z;
-                    if (Math.abs(offX) != radius || Math.abs(offZ) != radius || (random.nextBoundedInt(2) != 0 && sub != 0)) {
+                    if (Math.abs(offX) != radius || Math.abs(offZ) != radius || (random.nextInt(2) != 0 && sub != 0)) {
                         int bId = world.getBlockIdAt(xx, yy, zz);
                         if (bId == BlockID.AIR || bId == BlockID.LEAVES || bId == BlockID.LEAVES2) {
                             world.setBlockAt(xx, yy, zz, leavesId, leavesMeta);

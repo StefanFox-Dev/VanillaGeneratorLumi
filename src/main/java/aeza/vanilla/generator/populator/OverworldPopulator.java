@@ -4,7 +4,6 @@ import aeza.vanilla.generator.object.tree.GenericTree;
 import cn.nukkit.block.BlockID;
 import cn.nukkit.level.ChunkManager;
 import cn.nukkit.level.format.FullChunk;
-import cn.nukkit.math.NukkitRandom;
 
 import java.util.SplittableRandom;
 
@@ -18,7 +17,6 @@ public class OverworldPopulator extends Populator {
 
         int baseX = chunkX << 4;
         int baseZ = chunkZ << 4;
-        NukkitRandom nukkitRand = new NukkitRandom(random.nextLong());
 
         int trees = random.nextInt(3) + 2;
         for (int i = 0; i < trees; i++) {
@@ -28,7 +26,7 @@ public class OverworldPopulator extends Populator {
             int z = baseZ + rz;
             int y = chunk.getHighestBlockAt(rx, rz);
             if (y > 0) {
-                new GenericTree(nukkitRand).generate(world, nukkitRand, x, y, z);
+                new GenericTree(random).generate(world, random, x, y, z);
             }
         }
 

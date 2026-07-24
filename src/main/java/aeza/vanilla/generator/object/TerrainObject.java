@@ -1,7 +1,8 @@
 package aeza.vanilla.generator.object;
 
 import cn.nukkit.level.ChunkManager;
-import cn.nukkit.math.NukkitRandom;
+
+import java.util.SplittableRandom;
 
 public abstract class TerrainObject {
 
@@ -9,5 +10,5 @@ public abstract class TerrainObject {
         // Helper if needed
     }
 
-    public abstract boolean generate(ChunkManager world, NukkitRandom random, int x, int y, int z);
+    public abstract boolean generate(ChunkManager world, SplittableRandom random, int x, int y, int z);
 }

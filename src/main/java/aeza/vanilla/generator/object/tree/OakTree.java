@@ -1,10 +1,11 @@
 package aeza.vanilla.generator.object.tree;
 
 import cn.nukkit.block.BlockID;
-import cn.nukkit.math.NukkitRandom;
+
+import java.util.SplittableRandom;
 
 public class OakTree extends GenericTree {
-    public OakTree(NukkitRandom random) {
+    public OakTree(SplittableRandom random) {
         super(random);
         this.logId = BlockID.OAK_LOG;
         this.logMeta = 0; // Oak
