@@ -37,7 +37,7 @@
 
 ## 📋 Требования к системе
 
-* **Java**: OpenJDK 21 или новее.
+* **Java**: Azul Zulu OpenJDK 21 LTS (`21.0.11`+) или любая совместимая OpenJDK 21+.
 * **Ядро сервера**: Lumi / Nukkit (Bedrock Protocol 1.20+).
 * **Сборка**: Gradle 8.x (включен Gradle Wrapper).
 
