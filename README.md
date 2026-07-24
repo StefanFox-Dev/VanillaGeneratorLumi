@@ -37,7 +37,7 @@
 
 ## 📋 Требования к системе
 
-* **Java**: OpenJDK 17 или новее.
+* **Java**: OpenJDK 21 или новее.
 * **Ядро сервера**: Lumi / Nukkit (Bedrock Protocol 1.20+).
 * **Сборка**: Gradle 8.x (включен Gradle Wrapper).
 
