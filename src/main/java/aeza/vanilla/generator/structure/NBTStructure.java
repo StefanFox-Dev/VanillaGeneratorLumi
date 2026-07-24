@@ -1,17 +1,22 @@
 package aeza.vanilla.generator.structure;
 
+import cn.nukkit.Player;
 import cn.nukkit.block.Block;
 import cn.nukkit.block.BlockID;
 import cn.nukkit.block.material.BlockType;
 import cn.nukkit.block.material.BlockTypes;
 import cn.nukkit.level.ChunkManager;
+import cn.nukkit.level.GlobalBlockPalette;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.format.FullChunk;
+import cn.nukkit.math.BlockVector3;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.nbt.tag.ListTag;
 import cn.nukkit.nbt.tag.Tag;
+import cn.nukkit.network.protocol.UpdateSubChunkBlocksPacket;
+import cn.nukkit.network.protocol.types.BlockChangeEntry;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedInputStream;
@@ -50,6 +55,46 @@ public class NBTStructure {
             this.y = y;
             this.z = z;
             this.stateIndex = stateIndex;
+        }
+    }
+
+    private static class PlacedBlockRecord {
+        final int x;
+        final int y;
+        final int z;
+        final int id;
+        final int meta;
+
+        PlacedBlockRecord(int x, int y, int z, int id, int meta) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.id = id;
+            this.meta = meta;
+        }
+    }
+
+    private static class SubChunkKey {
+        final int cx;
+        final int cy;
+        final int cz;
+
+        SubChunkKey(int cx, int cy, int cz) {
+            this.cx = cx;
+            this.cy = cy;
+            this.cz = cz;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof SubChunkKey that)) return false;
+            return cx == that.cx && cy == that.cy && cz == that.cz;
+        }
+
+        @Override
+        public int hashCode() {
+            return (cx * 31 + cy) * 31 + cz;
         }
     }
 
@@ -119,7 +164,7 @@ public class NBTStructure {
         BLOCK_NAME_TO_ID.put("carrots", BlockID.CARROT_BLOCK);
         BLOCK_NAME_TO_ID.put("potatoes", BlockID.POTATO_BLOCK);
         BLOCK_NAME_TO_ID.put("water", BlockID.STILL_WATER);
-        BLOCK_NAME_TO_ID.put("lava", BlockID.MAGMA); // Map lava safely to MAGMA to prevent invisible lava bugs
+        BLOCK_NAME_TO_ID.put("lava", BlockID.MAGMA);
         BLOCK_NAME_TO_ID.put("flowing_lava", BlockID.MAGMA);
         BLOCK_NAME_TO_ID.put("oak_stairs", BlockID.OAK_WOOD_STAIRS);
         BLOCK_NAME_TO_ID.put("cobblestone_stairs", BlockID.COBBLESTONE_STAIRS);
@@ -518,7 +563,9 @@ public class NBTStructure {
             }
         }
 
-        // Fill foundation downwards so structure houses never float in the air
+        List<PlacedBlockRecord> placedRecords = new ArrayList<>();
+
+        // 1. Fill foundation downwards so structure houses never float in the air
         for (StructureBlock b : blocks) {
             if (b.y == 0 && b.stateIndex >= 0 && b.stateIndex < palette.size()) {
                 BlockState state = palette.get(b.stateIndex);
@@ -529,7 +576,7 @@ public class NBTStructure {
                         int cur = level.getBlockIdAt(px, fy, pz);
                         if (cur == BlockID.AIR || cur == BlockID.STILL_WATER || cur == BlockID.WATER || cur == BlockID.LEAVES || cur == BlockID.TALL_GRASS) {
                             if (actualLevel != null) {
-                                actualLevel.setBlock(new Vector3(px, fy, pz), Block.get(BlockID.DIRT, 0), true, true);
+                                actualLevel.setBlock(new Vector3(px, fy, pz), Block.get(BlockID.DIRT, 0), false, false);
                             } else {
                                 level.setBlockAt(px, fy, pz, BlockID.DIRT, 0);
                             }
@@ -541,7 +588,7 @@ public class NBTStructure {
             }
         }
 
-        // Place actual structure blocks with immediate player packet broadcast
+        // 2. Set structure blocks in chunk memory with ZERO individual packet sends (directUpdate=false, sendUpdate=false)
         for (StructureBlock b : blocks) {
             if (b.stateIndex >= 0 && b.stateIndex < palette.size()) {
                 BlockState state = palette.get(b.stateIndex);
@@ -552,7 +599,7 @@ public class NBTStructure {
 
                     int targetMeta = state.meta;
 
-                    // Fix 2-block door upper half meta bit (0x8) so doors never render half-missing!
+                    // Fix 2-block door upper half meta bit (0x8)
                     if (isDoorBlock(state.id)) {
                         boolean isUpperHalf = false;
                         for (StructureBlock other : blocks) {
@@ -565,21 +612,73 @@ public class NBTStructure {
                             }
                         }
                         if (isUpperHalf) {
-                            targetMeta |= 8; // Upper door block meta bit flag
+                            targetMeta |= 8;
                         }
                     }
 
-                    // Ensure lava maps safely to MAGMA to prevent invisible lava bugs
+                    // Map lava safely to MAGMA
                     int targetId = (state.id == BlockID.LAVA || state.id == BlockID.STILL_LAVA) ? BlockID.MAGMA : state.id;
 
                     if (actualLevel != null) {
-                        actualLevel.setBlock(new Vector3(px, py, pz), Block.get(targetId, targetMeta), true, true);
+                        actualLevel.setBlock(new Vector3(px, py, pz), Block.get(targetId, targetMeta), false, false);
                     } else {
                         level.setBlockAt(px, py, pz, targetId, targetMeta);
                     }
 
+                    placedRecords.add(new PlacedBlockRecord(px, py, pz, targetId, targetMeta));
+
                     if (targetId == BlockID.CHEST || targetId == BlockID.TRAPPED_CHEST || targetId == BlockID.BARREL) {
                         LootPopulator.populateChest(level, px, py, pz);
+                    }
+                }
+            }
+        }
+
+        // 3. Ultra-fast subchunk block update batching using UpdateSubChunkBlocksPacket!
+        if (actualLevel != null && !placedRecords.isEmpty()) {
+            Map<SubChunkKey, List<PlacedBlockRecord>> subChunkMap = new HashMap<>();
+            for (PlacedBlockRecord rec : placedRecords) {
+                int scx = rec.x >> 4;
+                int scy = rec.y >> 4;
+                int scz = rec.z >> 4;
+                SubChunkKey key = new SubChunkKey(scx, scy, scz);
+                subChunkMap.computeIfAbsent(key, k -> new ArrayList<>()).add(rec);
+            }
+
+            for (Map.Entry<SubChunkKey, List<PlacedBlockRecord>> entry : subChunkMap.entrySet()) {
+                SubChunkKey key = entry.getKey();
+                List<PlacedBlockRecord> recList = entry.getValue();
+
+                Map<?, Player> players = actualLevel.getChunkPlayers(key.cx, key.cz);
+                if (players == null || players.isEmpty()) continue;
+
+                Map<Integer, List<Player>> playersByProtocol = new HashMap<>();
+                for (Player player : players.values()) {
+                    if (player != null && player.isOnline()) {
+                        playersByProtocol.computeIfAbsent(player.protocol, p -> new ArrayList<>()).add(player);
+                    }
+                }
+
+                for (Map.Entry<Integer, List<Player>> protoEntry : playersByProtocol.entrySet()) {
+                    int protocol = protoEntry.getKey();
+                    List<Player> targetPlayers = protoEntry.getValue();
+
+                    UpdateSubChunkBlocksPacket packet = new UpdateSubChunkBlocksPacket();
+                    packet.position = new BlockVector3(key.cx << 4, key.cy << 4, key.cz << 4);
+
+                    for (PlacedBlockRecord rec : recList) {
+                        int runtimeId = GlobalBlockPalette.getOrCreateRuntimeId(protocol, rec.id, rec.meta);
+                        packet.standardBlocks.add(new BlockChangeEntry(
+                                new BlockVector3(rec.x & 0x0f, rec.y & 0x0f, rec.z & 0x0f),
+                                runtimeId,
+                                0,
+                                0,
+                                BlockChangeEntry.MessageType.NONE
+                        ));
+                    }
+
+                    for (Player player : targetPlayers) {
+                        player.dataPacket(packet);
                     }
                 }
             }
