@@ -1,156 +1,79 @@
 # 🌲 VanillaGeneratorLumi
 
-**VanillaGeneratorLumi** — это высокопроизводительный плагин и комплексная система генерации верхнего мира (Overworld) и построек для ядер **Lumi** и **Nukkit** (Minecraft Bedrock Edition 1.20+).
-
-Плагин воссоздает ванильный рельеф Minecraft, поддерживает биомы Вишнёвых рощ (*Cherry Grove*), бамбуковых джунглей, океанских глубин, а также содержит полную систему многокомпонентной генерации натуральных структур и построек (Древние Городоа, Бастионы, Деревни, Лесные особняки, Иглу и др.).
+**VanillaGeneratorLumi** is a high-performance Overworld terrain & structure generation system tailored for **Lumi** and **Nukkit** servers (Minecraft Bedrock Edition 1.20+).
 
 ---
 
-## ❓ Зачем нужен VanillaGeneratorLumi (Почему именно он?)
+## ⚡ Key Highlights
 
-Стандартные генераторы миров на Nukkit часто привязывают генератор прямо в `level.dat`, что блокирует перенос мира на другие ядра или приводит к сбоям при обновлении сервера.
-
-* **Zero World Lock-In (Без жесткой привязки к миру)**: Плагин работает как динамический попьюлейтор и слушатель событий `EventBus`. Мир создается стандартным образом, и его можно беспятственно переносить между серверами.
-* **Поддержка двойного формата NBT (Java & Bedrock)**: Собственный алгоритм чтения NBT-структур парсит как Java NBT теги (`blocks`), так и Bedrock `.mcstructure` теги (`block_indices`).
-* **Мгновенная сетевая рассылка пакетов**: Блоки построек транслируются клиенту в реальном времени — структуры не "зависают" и не требуют отлёта на соседние чанки для отображения.
-* **Авто-выравнивание фундамента**: Дома деревень, аванпосты и башни автоматически достраивают фундамент до твердого грунта, предотвращая висящие в воздухе постройки.
-
----
-
-## 🏔 Все Генераторы и Попьюлейторы (Generators & Populators)
-
-### 1. `OverworldGenerator` (Основной генератор рельефа)
-- Использует 3D-шумы Perlin/Simplex для расчета высот, ландшафта, горных хребтов и низин.
-- Формирует гладкие береговые линии, реки, океанские впадины и горные вершины.
-- Записывает бинарные ID биомов прямо в память чанков (`chunk.setBiomeId`).
-
-### 2. `GroundGenerator` (Генератор слоев почвы)
-- **Пустыня (Desert)**: Верхний слой (3-5 блоков) — Песок (`SAND`), подстилающий слой (3-6 блоков) — Песчаник (`SANDSTONE`), глубже — цельный Камень (`STONE`).
-- **Обычные биомы (Plains, Forest, Taiga)**: Дерн (`GRASS`) -> Земля (`DIRT`) -> Камень (`STONE`).
-- **Подводный грунт**: Песок, Гравий и Глина на дне океанов и рек.
-
-### 3. `CherryGrovePopulator` (Вишнёвая роща)
-- Генерирует вишневые деревья сакуры, розовую листву и частицы лепестков.
-- Спавнит розовые лепестки на траве.
-- Регулирует сниженную плотность мобов (8% на чанк).
-
-### 4. `BambooPopulator` (Бамбуковый лес)
-- Генерирует стебли бамбука, подзол и тропическую растительность сбалансированной плотности (6%).
-
-### 5. `OceanPopulator` (Океанские глубины)
-- Спавнит ламинарии, водоросли, морские огурцы и кораловые структуры на дне океанов.
-
-### 6. `LootPopulator` (Генератор лута в сундуках)
-- **Древний Город**: Пластинка 5 (`RECORD_5`), Осколки пластинки 5 (`DISC_FRAGMENT_5`), Зачарованные Золотые Яблоки, Скалк-сенсоры (`SCULK_SENSOR`), Скалк-катализаторы (`SCULK_CATALYST`), Зачарованные Книги, Опытные пузырьки, Зачарованные алмазные поножи.
-- **Бастионы**: Золотые слитки, Золотые блоки, Незеритовый лом, Обсидиан, Арбалеты.
-- **Деревни**: Инструменты, Эмеральды, Хлеб, Железные и Золотые слитки, Саженцы.
-
-### 7. `MobPopulator` (Спавнер мобов в структурах)
-- Спавнит Разбойников в Аванпостах, Вызывателей и Палачей в Особняках, Деревенских жителей в Иглу и Деревнях, Пиглинов и Хоглинов в Бастионах.
+| Feature | Description |
+| :--- | :--- |
+| **🌐 Zero World Lock-In** | Dynamic event-driven populator. Switch server cores freely without locking `level.dat`. |
+| **📦 Dual NBT Engine** | Parses both Java NBT (`blocks`) and Bedrock NBT (`block_indices` / `.mcstructure`). |
+| **🚀 SubChunk Packet Batching** | Uses `UpdateSubChunkBlocksPacket` to batch 1,000+ blocks into 1 packet per subchunk. |
+| **🏗 Auto-Foundation** | Village houses & outposts extend dirt foundations downwards to prevent floating structures. |
+| **⚡ SplittableRandom Engine** | Thread-safe, lock-free random generation for noise, caves, trees, and ores. |
 
 ---
 
-## 🏛 Все Натуральные Структуры и Постройки (Structures & Buildings)
+## 🏔 Generators & Populators
 
-### 1. 🏛 Древний Город (`ancient_city`)
-* **Подземная генерация**: Генерируется на глубине `Y=22` в слоях сланца.
-* **Составные части**:
-  - `city_center`: Центральная рама из укрепленного сланца с деревянным мостом.
-  - **Подвальные редстоун-секреты**: Потайные комнаты под рамой с рабочими схемами из редстоуна, поршневыми дверями, компараторами, повторителями и мишенями.
-  - `city`: Залы, библиотеки и камеры.
-  - `walls`: Коридоры, выстланные синей шерстью для глушения вибраций, уголковые и проходные стены.
-  - `structures`: Малые постройки, статуи и кафедры.
-
-### 2. 🏰 Незер-Бастион (`bastion`)
-* **Составные части**:
-  - `treasure`: Центральная сокровищница с мостом над лавой и защищенными сундуками.
-  - `units/center_pieces`: Центральные жилые части бастиона.
-  - `units/walls` & `units/ramparts`: Внешние укрепленные стены и рампы.
-  - `bridge`: Проходные мосты.
-  - `hoglin_stable`: Загоны для хоглинов с базальтовыми блоками.
-
-### 3. 🏡 Поселения Деревень (`village`)
-Спавн полноценных комплексов из 10–14 зданий с дорожками и центральной площадью:
-* 🌾 **Равнинная деревня (`village/plains`)**: Дома кузнеца, оружейника, мясника, картографа, библиотеки, церкви, крупные и малые фермы, загоны для скота, фонарные столбы, центральные площади с колодцем.
-* 🏜 **Пустынная деревня (`village/desert`)**: Дома из песчаника, фермы, башни, колодцы.
-* 🌴 **Саванновая деревня (`village/savanna`)**: Постройки из акации.
-* 🌲 **Таежная деревня (`village/taiga`)**: Дома и пилорамы из ели.
-* ❄️ **Снежная деревня (`village/snowy`)**: Заснеженные дома и плотный лед.
-
-### 4. 🏰 Лесной Особняк (`mansion`)
-* **Составные части**:
-  - `entrance`: Грандиозный парадный вход и центральный холл с лестницей на верхние этажи.
-  - `1x1_a1` .. `1x1_a5` / `1x2_a1` .. `1x2_a9` / `2x2_a1` .. `2x2_a5`: Залы, спальни, кабинеты, библиотеки и тайники 1-го и 2-го этажей.
-  - `wall_flat` / `wall_window` / `wall_corner`: Внешние стены с окнами из темного дуба.
-
-### 5. ❄️ Иглу (`igloo`)
-* **Составные части**:
-  - `igloo_top_trapdoor`: Снежный купол на поверхности с кроватью, печью, верстаком и люком.
-  - `igloo_middle`: Секретная вертикальная лестничная шахта вниз.
-  - `igloo_bottom`: Подземная лаборатория с варильной стойкой, котлом, сундуками с золотым яблоком и зельем слабости, клетками с жителем и зомби-жителем.
-
-### 6. 🏹 Аванпост Разбойников (`pillageroutpost`)
-* Главная сторожевая башня из темного дуба и булыжника с мишенями и клетки с клетками.
-
-### 7. 🌋 Развалины Портала (`ruined_portal`)
-* Заброшенные рамки порталов в Незер из обсидиана с адским камнем, магмой и золотыми сундуками.
-
-### 8. 🚢 Затонувший Корабль и Руины (`shipwreck`, `ruin`)
-* Остов корабля и затонувшие океанские руины на дне морей.
-
-### 9. 🦴 Ископаемые Останки (`fossils`, `nether_fossils`)
-* Огромные скелеты из костных блоков в земных глубинах и Незере.
+| Generator / Populator | Target Biomes / Zone | Description |
+| :--- | :--- | :--- |
+| **`OverworldGenerator`** | Overworld | 3D Perlin/Simplex height noise, mountain ridges, and direct biome binary chunk writing. |
+| **`GroundGenerator`** | All Terrain | Authentic ground layers: Sand ➔ Sandstone ➔ Stone in deserts; Dirt ➔ Stone in plains. |
+| **`CaveGenerator`** | Subterranean (`Y=5..55`) | Carves natural cave tunnels, caverns, flow noise, and lava pools. |
+| **`CherryGrovePopulator`** | Cherry Grove | Sakura trees, pink leaf canopy, ground flower petals, and balanced mob spawns (8%). |
+| **`BambooPopulator`** | Jungle Biomes | Bamboo stalks, podzol, and dense jungle vegetation (6%). |
+| **`OceanPopulator`** | Oceans & Rivers | Kelp, seagrass, sea pickles, and vibrant coral reefs. |
+| **`LootPopulator`** | Chest Entities | Spawns Disc 5, Echo Shards, Enchanted Golden Apples, Netherite Scraps, & Sculk Catalysts. |
+| **`MobPopulator`** | Structures | Spawns Pillagers in outposts, Evokers/Vindicators in Mansions, & Villagers in Igloos. |
 
 ---
 
-## 📋 Требования к системе
+## 🏛 Natural Structures & Assemblies
 
-* **Java**: Azul Zulu OpenJDK 21 LTS (`21.0.11`+) или любая совместимая OpenJDK 21+.
-* **Ядро сервера**: Lumi / Nukkit (Bedrock Protocol 1.20+).
-* **Сборка**: Gradle 8.x (включен Gradle Wrapper).
+| Category | Command Key | Key Components | Spawning & Generation Details |
+| :--- | :--- | :--- | :--- |
+| **🏛 Ancient City** | `ancient_city` | `city_center`, `city`, `walls`, `structures` | Deep underground (`Y=22`), reinforced deepslate center, wool corridors, redstone secrets. |
+| **🏰 Nether Bastion** | `bastion` | `treasure`, `units`, `ramparts`, `bridge`, `hoglin_stable` | Multi-unit basalt fortress with treasure bridges and Piglin/Hoglin spawns. |
+| **🏡 Villages** | `village` | Plains, Desert, Savanna, Taiga, Snowy | Full 10–14 building settlements (churches, blacksmiths, armorers, farms, wells). |
+| **🏰 Woodland Mansion** | `mansion` | `entrance`, `1x1_*`, `1x2_*`, `2x2_*`, `wall_*` | 2-story grand entrance hall with surrounding rooms, secret chambers, and windows. |
+| **❄️ Igloo Laboratory** | `igloo` | `igloo_top`, `igloo_middle`, `igloo_bottom` | Surface snow dome with bed & furnace, secret ladder shaft, and underground potion lab. |
+| **🏹 Pillager Outpost** | `pillageroutpost` | Watchtower & cages | Dark oak outpost towers with target range and cages. |
+| **🌋 Ruined Portal** | `ruined_portal` | Obsidian frames & netherrack | Nether portal ruins with magma blocks and loot chests. |
+| **🚢 Shipwreck & Ruins** | `shipwreck`, `ruin` | Sunken hulls & ocean ruins | Underwater ship hulls and stone ocean ruins. |
+| **🦴 Fossils** | `fossils` | Bone structures | Giant underground dinosaur skeletons. |
 
 ---
 
-## 🚀 Инструкция по установке и сборке
+## 📋 System Requirements
 
-### 1. Сборка из исходников
-Для компиляции `.jar` файла запустите команду в корне проекта:
+| Component | Minimum Requirement |
+| :--- | :--- |
+| **Java Runtime** | Azul Zulu OpenJDK 21 LTS (`21.0.11`+) or Java 21+ |
+| **Server Core** | Lumi / Nukkit (Bedrock 1.20+) |
+| **Build Tool** | Gradle 8.x (Wrapper included) |
+
+---
+
+## 🚀 Building & Installation
 
 ```bash
-# Windows
-gradlew.bat shadowJar
-
-# Linux / macOS
-./gradlew shadowJar
+# Build plugin JAR with Gradle
+./gradlew shadowJar   # Linux / macOS
+gradlew.bat shadowJar # Windows
 ```
 
-Готовый файл плагина будет автоматически создан по пути:
-`build/libs/VanillaGeneratorLumi.jar` (а также скопирован в `plugins/`).
-
-### 2. Установка на сервер
-1. Поместите скопированный `VanillaGeneratorLumi.jar` в папку `plugins/` вашего сервера Lumi.
-2. Перезапустите сервер. Плагин автоматически зарегистрирует команды и попьюлейторы структур.
+1. Compiled JAR location: `build/libs/VanillaGeneratorLumi.jar`.
+2. Copy `VanillaGeneratorLumi.jar` to your server's `plugins/` directory.
+3. Restart the server to initialize generators and commands.
 
 ---
 
-## 🎮 Команды и Права (Commands & Permissions)
+## 🎮 Commands & Permissions
 
-| Команда | Описание | Право (Permission) |
+| Command | Description | Permission |
 | :--- | :--- | :--- |
-| `/stset <название>` | Мгновенно спавнит полноценную структуру в точке игрока | `vanillagenerator.command.stset` |
-| `/structure` | Детальная справка по доступным структурам и биомам | `vanillagenerator.command.structure` |
-
-### Доступные категории для `/stset`:
-- `ancient_city` — Полный Древний Город с подземным центром и редстоун-секретом
-- `bastion` — Незер-бастион с сокровищами
-- `village` / `village/plains` / `village/desert` / `village/savanna` / `village/taiga` / `village/snowy` — Поселения деревни
-- `mansion` — Многоэтажный Лесной особняк
-- `igloo` — Иглу с подземной лабораторией
-- `ruined_portal` — Заброшенный портал в Незер
-- `pillageroutpost` — Аванпост разбойников
-- `shipwreck` — Затонувший корабль / Руины
-
----
-
-## 🛠 Авторство
-* **Автор**: Community
+| `/stset <category>` | Spawns a full multi-part structure at player position | `vanillagenerator.command.stset` |
+| `/structure` | Shows detailed structure generation & biome info | `vanillagenerator.command.structure` |
