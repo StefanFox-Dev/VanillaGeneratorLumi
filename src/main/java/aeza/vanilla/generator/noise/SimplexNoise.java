@@ -1,6 +1,5 @@
 package aeza.vanilla.generator.noise;
 
-import java.util.Random;
 import java.util.SplittableRandom;
 
 public class SimplexNoise extends NoiseGenerator {
@@ -15,23 +14,6 @@ public class SimplexNoise extends NoiseGenerator {
             {1, 0, 1}, {-1, 0, 1}, {1, 0, -1}, {-1, 0, -1},
             {0, 1, 1}, {0, -1, 1}, {0, 1, -1}, {0, -1, -1}
     };
-
-    public SimplexNoise(Random random) {
-        this.offsetX = random.nextFloat() * 256.0;
-        this.offsetY = random.nextFloat() * 256.0;
-        this.offsetZ = random.nextFloat() * 256.0;
-
-        for (int i = 0; i < 256; ++i) {
-            perm[i] = i;
-        }
-        for (int i = 0; i < 256; ++i) {
-            int pos = random.nextInt(256 - i) + i;
-            int old = perm[i];
-            perm[i] = perm[pos];
-            perm[pos] = old;
-            perm[i + 256] = perm[i];
-        }
-    }
 
     public SimplexNoise(SplittableRandom random) {
         this.offsetX = random.nextDouble() * 256.0;

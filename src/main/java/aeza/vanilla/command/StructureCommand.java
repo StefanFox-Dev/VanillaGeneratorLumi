@@ -8,7 +8,7 @@ import cn.nukkit.command.CommandSender;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.Location;
 
-import java.util.Random;
+import java.util.SplittableRandom;
 
 public class StructureCommand extends Command {
 
@@ -41,7 +41,7 @@ public class StructureCommand extends Command {
         }
 
         String category = filter.equalsIgnoreCase("auto") ? getAutoCategoryForDimension(player.getLevel().getDimension()) : filter;
-        NBTStructure struct = StructureManager.getRandomStructure(category, new Random());
+        NBTStructure struct = StructureManager.getRandomStructure(category, new SplittableRandom());
 
         if (struct == null) {
             player.sendMessage("§c[Structures] Unknown structure '" + category + "'.");

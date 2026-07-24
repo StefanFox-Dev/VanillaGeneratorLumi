@@ -1,31 +1,28 @@
 package aeza.vanilla.generator.structure;
 
-import aeza.vanilla.VanillaGeneratorLumi;
+import cn.nukkit.math.Vector3;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
-import java.net.URL;
+import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Enumeration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
+import java.util.SplittableRandom;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class StructureManager {
 
     public static class StructureLocation {
-        public final String world;
         public final String category;
         public final int x;
         public final int y;
         public final int z;
 
-        public StructureLocation(String world, String category, int x, int y, int z) {
-            this.world = world;
+        public StructureLocation(String category, int x, int y, int z) {
             this.category = category;
             this.x = x;
             this.y = y;
@@ -33,139 +30,129 @@ public class StructureManager {
         }
     }
 
-    private static final Map<String, List<NBTStructure>> CATEGORIZED_STRUCTURES = new HashMap<>();
-    private static final List<StructureLocation> TRACKED_STRUCTURES = new ArrayList<>();
-    private static boolean loaded = false;
+    private static final Map<String, NBTStructure> LOADED_STRUCTURES = new ConcurrentHashMap<>();
+    private static final Map<String, List<NBTStructure>> CATEGORIZED_STRUCTURES = new ConcurrentHashMap<>();
+    private static final Map<String, List<StructureLocation>> GENERATED_STRUCTURE_LOCATIONS = new ConcurrentHashMap<>();
 
-    public static synchronized void init() {
-        if (loaded) return;
-        loaded = true;
-
-        log.info("Initializing embedded NBT structure resources...");
-        try {
-            File pluginJar = null;
-            if (VanillaGeneratorLumi.getInstance() != null) {
-                pluginJar = VanillaGeneratorLumi.getInstance().getFile();
-            }
-
-            if (pluginJar != null && pluginJar.exists() && pluginJar.getName().endsWith(".jar")) {
-                loadFromJar(pluginJar);
-            }
-
-            if (CATEGORIZED_STRUCTURES.isEmpty()) {
-                URL codeSource = StructureManager.class.getProtectionDomain().getCodeSource().getLocation();
-                File codeSourceFile = new File(codeSource.toURI());
-                if (codeSourceFile.isFile() && codeSourceFile.getName().endsWith(".jar")) {
-                    loadFromJar(codeSourceFile);
-                }
-            }
-
-            if (CATEGORIZED_STRUCTURES.isEmpty()) {
-                File[] searchDirs = new File[] {
-                    new File("plugins/structures"),
-                    new File("plugins/VanillaGeneratorLumi/structures"),
-                    new File("plugins/VanillaGeneratorLumi/src/main/resources/structures"),
-                    new File("src/main/resources/structures"),
-                    new File("structures")
-                };
-
-                for (File dir : searchDirs) {
-                    if (dir.exists()) {
-                        log.info("Scanning filesystem structures directory: " + dir.getAbsolutePath());
-                        scanDirectory(dir, "");
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("Failed to load embedded structure resources", e);
-        }
-
-        log.info("Loaded " + CATEGORIZED_STRUCTURES.size() + " structure categories with " + countTotalStructures() + " total templates from resources.");
+    public static void init() {
+        if (!LOADED_STRUCTURES.isEmpty()) return;
+        loadClasspathStructures();
+        loadExternalStructures();
     }
 
-    private static boolean isTechnicalAirTemplate(String filename) {
-        String f = filename.toLowerCase();
-        return f.contains("air_base") || f.contains("jigsaw_test") || f.contains("empty") || f.endsWith("/air.nbt") || f.contains("terminator");
-    }
+    private static void loadClasspathStructures() {
+        String[] indexFiles = new String[] {
+            "ancient_city/city_center.nbt", "ancient_city/city.nbt", "ancient_city/structures.nbt", "ancient_city/walls.nbt",
+            "bastion/treasure.nbt", "bastion/bridge.nbt", "bastion/hoglin_stable.nbt", "bastion/units.nbt",
+            "mansion/entrance.nbt", "mansion/1x1_a1.nbt", "mansion/1x1_a2.nbt", "mansion/1x2_a1.nbt", "mansion/2x2_a1.nbt",
+            "igloo/igloo_top_trapdoor.nbt", "igloo/igloo_top_no_trapdoor.nbt", "igloo/igloo_middle.nbt", "igloo/igloo_bottom.nbt",
+            "village/plains/town_centers.nbt", "village/plains/houses.nbt",
+            "village/desert/town_centers.nbt", "village/desert/houses.nbt",
+            "village/savanna/town_centers.nbt", "village/savanna/houses.nbt",
+            "village/taiga/town_centers.nbt", "village/taiga/houses.nbt",
+            "village/snowy/town_centers.nbt", "village/snowy/houses.nbt",
+            "pillageroutpost/watchtower.nbt", "ruined_portal/portal.nbt", "shipwreck/shipwreck.nbt", "ruin/ocean_ruin.nbt"
+        };
 
-    private static void loadFromJar(File jarFile) {
-        log.info("Reading JAR structure entries from: " + jarFile.getAbsolutePath());
-        try (JarFile jar = new JarFile(jarFile)) {
-            Enumeration<JarEntry> entries = jar.entries();
-            while (entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
-                String name = entry.getName().replace('\\', '/');
-                String lower = name.toLowerCase();
-
-                int idx = lower.indexOf("structures/");
-                if (!entry.isDirectory() && idx != -1 && lower.endsWith(".nbt") && !isTechnicalAirTemplate(lower)) {
-                    String subPath = name.substring(idx + "structures/".length());
-                    int lastSlash = subPath.lastIndexOf('/');
-                    String category = lastSlash != -1 ? subPath.substring(0, lastSlash) : "common";
-
-                    try (var stream = jar.getInputStream(entry)) {
-                        NBTStructure struct = NBTStructure.loadFromStream(stream);
-                        if (struct != null && (!struct.getBlocks().isEmpty() || struct.getSizeX() > 0)) {
-                            CATEGORIZED_STRUCTURES.computeIfAbsent(category.toLowerCase(), k -> new ArrayList<>()).add(struct);
-                        }
+        for (String relativePath : indexFiles) {
+            String resPath = "structures/" + relativePath;
+            try (InputStream in = StructureManager.class.getClassLoader().getResourceAsStream(resPath)) {
+                if (in != null) {
+                    NBTStructure s = NBTStructure.loadFromStream(in);
+                    if (s != null) {
+                        registerStructure(relativePath.replace(".nbt", ""), s);
                     }
                 }
+            } catch (Exception e) {
+                log.warn("Failed to load classpath structure {}", resPath);
             }
-        } catch (Exception e) {
-            log.error("Error reading JAR entries for structures", e);
         }
+    }
+
+    private static void loadExternalStructures() {
+        File folder = new File("plugins/structures");
+        if (!folder.exists()) {
+            folder.mkdirs();
+            return;
+        }
+        scanDirectory(folder, "");
     }
 
     private static void scanDirectory(File dir, String category) {
         File[] files = dir.listFiles();
         if (files == null) return;
-
-        for (File file : files) {
-            if (file.isDirectory()) {
-                String subCat = category.isEmpty() ? file.getName() : category + "/" + file.getName();
-                scanDirectory(file, subCat);
-            } else if (file.getName().endsWith(".nbt") && !isTechnicalAirTemplate(file.getName())) {
-                NBTStructure struct = NBTStructure.load(file);
-                if (struct != null && (!struct.getBlocks().isEmpty() || struct.getSizeX() > 0)) {
-                    String cat = category.isEmpty() ? "common" : category;
-                    CATEGORIZED_STRUCTURES.computeIfAbsent(cat.toLowerCase(), k -> new ArrayList<>()).add(struct);
+        for (File f : files) {
+            if (f.isDirectory()) {
+                String subCategory = category.isEmpty() ? f.getName() : category + "/" + f.getName();
+                scanDirectory(f, subCategory);
+            } else if (f.getName().endsWith(".nbt") || f.getName().endsWith(".mcstructure")) {
+                NBTStructure s = NBTStructure.load(f);
+                if (s != null) {
+                    String name = f.getName().substring(0, f.getName().lastIndexOf('.'));
+                    String key = category.isEmpty() ? name : category + "/" + name;
+                    registerStructure(key, s);
                 }
             }
         }
     }
 
-    private static int countTotalStructures() {
-        return CATEGORIZED_STRUCTURES.values().stream().mapToInt(List::size).sum();
-    }
+    public static void registerStructure(String key, NBTStructure structure) {
+        if (key == null || structure == null) return;
+        String normalizedKey = key.toLowerCase();
+        LOADED_STRUCTURES.put(normalizedKey, structure);
 
-    public static synchronized void registerGeneratedStructure(String world, String category, int x, int y, int z) {
-        TRACKED_STRUCTURES.add(new StructureLocation(world, category, x, y, z));
-    }
-
-    public static synchronized StructureLocation findNearestStructure(String world, String categoryFilter, int playerX, int playerZ) {
-        StructureLocation nearest = null;
-        double minSqDist = Double.MAX_VALUE;
-
-        for (StructureLocation loc : TRACKED_STRUCTURES) {
-            if (!loc.world.equalsIgnoreCase(world)) continue;
-            if (categoryFilter != null && !categoryFilter.isEmpty() && !categoryFilter.equalsIgnoreCase("auto")) {
-                if (!loc.category.toLowerCase().contains(categoryFilter.toLowerCase())) continue;
-            }
-
-            double dx = loc.x - playerX;
-            double dz = loc.z - playerZ;
-            double distSq = dx * dx + dz * dz;
-
-            if (distSq < minSqDist) {
-                minSqDist = distSq;
-                nearest = loc;
-            }
+        String category = "common";
+        if (normalizedKey.contains("/")) {
+            category = normalizedKey.substring(0, normalizedKey.lastIndexOf('/'));
         }
 
+        CATEGORIZED_STRUCTURES.computeIfAbsent(category, k -> Collections.synchronizedList(new ArrayList<>())).add(structure);
+    }
+
+    public static NBTStructure getStructure(String name) {
+        if (name == null) return null;
+        return LOADED_STRUCTURES.get(name.toLowerCase());
+    }
+
+    public static void registerGeneratedStructure(String worldName, String category, int x, int y, int z) {
+        String key = worldName.toLowerCase();
+        GENERATED_STRUCTURE_LOCATIONS.computeIfAbsent(key, k -> Collections.synchronizedList(new ArrayList<>()))
+                .add(new StructureLocation(category, x, y, z));
+    }
+
+    public static StructureLocation findNearestStructure(String worldName, String categoryFilter, int posX, int posZ) {
+        String key = worldName.toLowerCase();
+        List<StructureLocation> locs = GENERATED_STRUCTURE_LOCATIONS.get(key);
+        if (locs == null || locs.isEmpty()) return null;
+
+        StructureLocation nearest = null;
+        double minDistanceSq = Double.MAX_VALUE;
+
+        boolean isAuto = categoryFilter == null || categoryFilter.isEmpty() || "auto".equalsIgnoreCase(categoryFilter);
+
+        for (StructureLocation loc : locs) {
+            if (isAuto || loc.category.equalsIgnoreCase(categoryFilter) || loc.category.startsWith(categoryFilter.toLowerCase())) {
+                double dx = loc.x - posX;
+                double dz = loc.z - posZ;
+                double distSq = dx * dx + dz * dz;
+                if (distSq < minDistanceSq) {
+                    minDistanceSq = distSq;
+                    nearest = loc;
+                }
+            }
+        }
         return nearest;
     }
 
-    public static NBTStructure getRandomStructure(String category, Random random) {
+    public static Vector3 getNearestStructure(String worldName, String category, Vector3 from) {
+        StructureLocation loc = findNearestStructure(worldName, category, from.getFloorX(), from.getFloorZ());
+        if (loc != null) {
+            return new Vector3(loc.x, loc.y, loc.z);
+        }
+        return null;
+    }
+
+    public static NBTStructure getRandomStructure(String category, SplittableRandom random) {
         if (category == null || category.isEmpty()) return null;
         String key = category.toLowerCase();
 

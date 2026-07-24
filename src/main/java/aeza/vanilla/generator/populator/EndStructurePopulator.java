@@ -6,7 +6,6 @@ import cn.nukkit.block.BlockID;
 import cn.nukkit.level.ChunkManager;
 import cn.nukkit.level.format.FullChunk;
 
-import java.util.Random;
 import java.util.SplittableRandom;
 
 public class EndStructurePopulator extends Populator {
@@ -27,7 +26,6 @@ public class EndStructurePopulator extends Populator {
 
     @Override
     public void populate(ChunkManager world, SplittableRandom random, int chunkX, int chunkZ, FullChunk chunk) {
-        Random javaRand = new Random(random.nextLong());
         int baseX = chunkX << 4;
         int baseZ = chunkZ << 4;
         String worldName = chunk.getProvider() != null && chunk.getProvider().getLevel() != null ? chunk.getProvider().getLevel().getName() : "the_end";
@@ -36,7 +34,7 @@ public class EndStructurePopulator extends Populator {
         if (((chunkX & 7) == 4) && ((chunkZ & 7) == 4)) {
             int surfaceY = findEndGroundY(chunk, 8, 8);
             if (surfaceY > 30) {
-                NBTStructure endCity = StructureManager.getRandomStructure("endcity", javaRand);
+                NBTStructure endCity = StructureManager.getRandomStructure("endcity", random);
                 if (endCity != null) {
                     endCity.place(world, baseX, surfaceY, baseZ);
                     StructureManager.registerGeneratedStructure(worldName, "endcity", baseX, surfaceY, baseZ);

@@ -6,7 +6,6 @@ import cn.nukkit.block.BlockID;
 import cn.nukkit.level.ChunkManager;
 import cn.nukkit.level.format.FullChunk;
 
-import java.util.Random;
 import java.util.SplittableRandom;
 
 public class NetherStructurePopulator extends Populator {
@@ -27,7 +26,6 @@ public class NetherStructurePopulator extends Populator {
 
     @Override
     public void populate(ChunkManager world, SplittableRandom random, int chunkX, int chunkZ, FullChunk chunk) {
-        Random javaRand = new Random(random.nextLong());
         int baseX = chunkX << 4;
         int baseZ = chunkZ << 4;
         int surfaceY = findNetherGroundY(chunk, 8, 8);
@@ -35,7 +33,7 @@ public class NetherStructurePopulator extends Populator {
 
         // Bastion Remnants (~every 8 chunks)
         if (((chunkX & 7) == 3) && ((chunkZ & 7) == 3)) {
-            NBTStructure bastion = StructureManager.getRandomStructure("bastion", javaRand);
+            NBTStructure bastion = StructureManager.getRandomStructure("bastion", random);
             if (bastion != null) {
                 bastion.place(world, baseX, surfaceY, baseZ);
                 StructureManager.registerGeneratedStructure(worldName, "bastion", baseX, surfaceY, baseZ);
@@ -45,9 +43,9 @@ public class NetherStructurePopulator extends Populator {
 
         // Nether Fossils (~every 8 chunks)
         if (((chunkX & 7) == 1) && ((chunkZ & 7) == 5)) {
-            NBTStructure fossil = StructureManager.getRandomStructure("nether_fossils", javaRand);
+            NBTStructure fossil = StructureManager.getRandomStructure("nether_fossils", random);
             if (fossil == null) {
-                fossil = StructureManager.getRandomStructure("fossils", javaRand);
+                fossil = StructureManager.getRandomStructure("fossils", random);
             }
             if (fossil != null) {
                 fossil.place(world, baseX + 4, surfaceY, baseZ + 4);
@@ -58,7 +56,7 @@ public class NetherStructurePopulator extends Populator {
 
         // Ruined Nether Portal (~every 10 chunks)
         if (((chunkX & 15) == 6) && ((chunkZ & 15) == 2)) {
-            NBTStructure portal = StructureManager.getRandomStructure("ruined_portal", javaRand);
+            NBTStructure portal = StructureManager.getRandomStructure("ruined_portal", random);
             if (portal != null) {
                 portal.place(world, baseX + 4, surfaceY, baseZ + 4);
                 StructureManager.registerGeneratedStructure(worldName, "ruined_portal", baseX + 4, surfaceY, baseZ + 4);

@@ -8,7 +8,6 @@ import cn.nukkit.block.BlockID;
 import cn.nukkit.level.ChunkManager;
 import cn.nukkit.level.format.FullChunk;
 
-import java.util.Random;
 import java.util.SplittableRandom;
 
 public class StructurePopulator extends Populator {
@@ -32,7 +31,6 @@ public class StructurePopulator extends Populator {
 
     @Override
     public void populate(ChunkManager world, SplittableRandom random, int chunkX, int chunkZ, FullChunk chunk) {
-        Random javaRand = new Random(random.nextLong());
         int baseX = chunkX << 4;
         int baseZ = chunkZ << 4;
 
@@ -44,9 +42,9 @@ public class StructurePopulator extends Populator {
         if (surfaceY >= 62 && ((chunkX & 31) == 12) && ((chunkZ & 31) == 20)) {
             String villageType = getVillageCategory(biome);
             if (villageType != null) {
-                NBTStructure center = StructureManager.getRandomStructure(villageType + "/town_centers", javaRand);
+                NBTStructure center = StructureManager.getRandomStructure(villageType + "/town_centers", random);
                 if (center == null) {
-                    center = StructureManager.getRandomStructure(villageType + "/houses", javaRand);
+                    center = StructureManager.getRandomStructure(villageType + "/houses", random);
                 }
 
                 if (center != null) {
@@ -69,9 +67,9 @@ public class StructurePopulator extends Populator {
                         int hy = findGroundY(chunk, localX, localZ);
                         if (hy < 60) hy = surfaceY;
 
-                        NBTStructure building = StructureManager.getRandomStructure(villageType + "/houses", javaRand);
+                        NBTStructure building = StructureManager.getRandomStructure(villageType + "/houses", random);
                         if (building == null) {
-                            building = StructureManager.getRandomStructure(villageType, javaRand);
+                            building = StructureManager.getRandomStructure(villageType, random);
                         }
 
                         if (building != null) {
@@ -86,8 +84,8 @@ public class StructurePopulator extends Populator {
         // 2. Underground Ancient City Generation (~every 32 chunks deep underground)
         if (((chunkX & 31) == 16) && ((chunkZ & 31) == 16)) {
             int ancientY = 22; // Deep underground in deepslate layer
-            NBTStructure center = StructureManager.getRandomStructure("ancient_city/city_center", javaRand);
-            if (center == null) center = StructureManager.getRandomStructure("ancient_city", javaRand);
+            NBTStructure center = StructureManager.getRandomStructure("ancient_city/city_center", random);
+            if (center == null) center = StructureManager.getRandomStructure("ancient_city", random);
 
             if (center != null) {
                 center.place(world, "ancient_city", baseX, ancientY, baseZ);
@@ -99,9 +97,9 @@ public class StructurePopulator extends Populator {
                 };
 
                 for (int[] off : offsets) {
-                    NBTStructure sub = StructureManager.getRandomStructure("ancient_city/city", javaRand);
-                    if (sub == null) sub = StructureManager.getRandomStructure("ancient_city/structures", javaRand);
-                    if (sub == null) sub = StructureManager.getRandomStructure("ancient_city/walls", javaRand);
+                    NBTStructure sub = StructureManager.getRandomStructure("ancient_city/city", random);
+                    if (sub == null) sub = StructureManager.getRandomStructure("ancient_city/structures", random);
+                    if (sub == null) sub = StructureManager.getRandomStructure("ancient_city/walls", random);
                     if (sub != null) {
                         sub.place(world, "ancient_city", baseX + off[0], ancientY, baseZ + off[1]);
                     }
@@ -129,8 +127,8 @@ public class StructurePopulator extends Populator {
 
         // 3. Woodland Mansion (~every 32 chunks in dark forest / roofed forest)
         if (surfaceY >= 62 && ((chunkX & 31) == 28) && ((chunkZ & 31) == 28)) {
-            NBTStructure entrance = StructureManager.getRandomStructure("mansion/entrance", javaRand);
-            if (entrance == null) entrance = StructureManager.getRandomStructure("mansion", javaRand);
+            NBTStructure entrance = StructureManager.getRandomStructure("mansion/entrance", random);
+            if (entrance == null) entrance = StructureManager.getRandomStructure("mansion", random);
 
             if (entrance != null) {
                 entrance.place(world, "mansion", baseX, surfaceY, baseZ);
@@ -142,10 +140,10 @@ public class StructurePopulator extends Populator {
                 };
 
                 for (int[] off : roomOffsets) {
-                    NBTStructure room = StructureManager.getRandomStructure("mansion", javaRand);
+                    NBTStructure room = StructureManager.getRandomStructure("mansion", random);
                     if (room != null) {
                         room.place(world, "mansion", baseX + off[0], surfaceY, baseZ + off[1]);
-                        NBTStructure room2 = StructureManager.getRandomStructure("mansion", javaRand);
+                        NBTStructure room2 = StructureManager.getRandomStructure("mansion", random);
                         if (room2 != null) {
                             room2.place(world, "mansion", baseX + off[0], surfaceY + 7, baseZ + off[1]);
                         }
@@ -158,15 +156,15 @@ public class StructurePopulator extends Populator {
 
         // 4. Igloo (~every 20 chunks in cold / snow biomes)
         if (surfaceY >= 62 && (biome == BiomeIds.ICE_PLAINS || biome == BiomeIds.COLD_TAIGA) && ((chunkX & 19) == 9) && ((chunkZ & 19) == 9)) {
-            NBTStructure top = StructureManager.getRandomStructure("igloo/igloo_top_trapdoor", javaRand);
-            if (top == null) top = StructureManager.getRandomStructure("igloo/igloo_top_no_trapdoor", javaRand);
-            if (top == null) top = StructureManager.getRandomStructure("igloo", javaRand);
+            NBTStructure top = StructureManager.getRandomStructure("igloo/igloo_top_trapdoor", random);
+            if (top == null) top = StructureManager.getRandomStructure("igloo/igloo_top_no_trapdoor", random);
+            if (top == null) top = StructureManager.getRandomStructure("igloo", random);
 
             if (top != null) {
                 top.place(world, "igloo", baseX + 4, surfaceY, baseZ + 4);
 
                 // Secret basement ladder shaft down
-                NBTStructure mid = StructureManager.getRandomStructure("igloo/igloo_middle", javaRand);
+                NBTStructure mid = StructureManager.getRandomStructure("igloo/igloo_middle", random);
                 if (mid != null) {
                     for (int depth = 3; depth <= 12; depth += 2) {
                         mid.place(world, "igloo", baseX + 4, surfaceY - depth, baseZ + 4);
@@ -174,7 +172,7 @@ public class StructurePopulator extends Populator {
                 }
 
                 // Secret underground laboratory room
-                NBTStructure bottom = StructureManager.getRandomStructure("igloo/igloo_bottom", javaRand);
+                NBTStructure bottom = StructureManager.getRandomStructure("igloo/igloo_bottom", random);
                 if (bottom != null) {
                     bottom.place(world, "igloo", baseX + 2, surfaceY - 14, baseZ + 2);
                 }
@@ -186,7 +184,7 @@ public class StructurePopulator extends Populator {
 
         // 5. Ruined Portal (~every 18 chunks)
         if (surfaceY >= 62 && ((chunkX & 17) == 4) && ((chunkZ & 17) == 10)) {
-            NBTStructure portal = StructureManager.getRandomStructure("ruined_portal", javaRand);
+            NBTStructure portal = StructureManager.getRandomStructure("ruined_portal", random);
             if (portal != null) {
                 portal.place(world, "ruined_portal", baseX + 4, surfaceY - 1, baseZ + 4);
                 StructureManager.registerGeneratedStructure(worldName, "ruined_portal", baseX + 4, surfaceY - 1, baseZ + 4);
@@ -196,7 +194,7 @@ public class StructurePopulator extends Populator {
 
         // 6. Pillager Outpost (~every 24 chunks)
         if (surfaceY >= 62 && ((chunkX & 23) == 7) && ((chunkZ & 23) == 15)) {
-            NBTStructure outpost = StructureManager.getRandomStructure("pillageroutpost", javaRand);
+            NBTStructure outpost = StructureManager.getRandomStructure("pillageroutpost", random);
             if (outpost != null) {
                 outpost.place(world, "pillageroutpost", baseX + 2, surfaceY, baseZ + 2);
                 StructureManager.registerGeneratedStructure(worldName, "pillageroutpost", baseX + 2, surfaceY, baseZ + 2);
@@ -206,9 +204,9 @@ public class StructurePopulator extends Populator {
 
         // 7. Shipwreck / Ruins (~every 16 chunks in oceans)
         if ((biome == BiomeIds.OCEAN || biome == BiomeIds.DEEP_OCEAN || biome == BiomeIds.FROZEN_OCEAN) && ((chunkX & 15) == 6) && ((chunkZ & 15) == 10)) {
-            NBTStructure shipwreck = StructureManager.getRandomStructure("shipwreck", javaRand);
+            NBTStructure shipwreck = StructureManager.getRandomStructure("shipwreck", random);
             if (shipwreck == null) {
-                shipwreck = StructureManager.getRandomStructure("ruin", javaRand);
+                shipwreck = StructureManager.getRandomStructure("ruin", random);
             }
             if (shipwreck != null) {
                 int oceanY = chunk.getHighestBlockAt(8, 8);

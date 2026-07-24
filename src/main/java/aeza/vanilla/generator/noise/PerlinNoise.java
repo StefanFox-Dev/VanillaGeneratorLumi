@@ -1,26 +1,8 @@
 package aeza.vanilla.generator.noise;
 
-import java.util.Random;
 import java.util.SplittableRandom;
 
 public class PerlinNoise extends NoiseGenerator {
-
-    public PerlinNoise(Random random) {
-        this.offsetX = random.nextFloat() * 256.0;
-        this.offsetY = random.nextFloat() * 256.0;
-        this.offsetZ = random.nextFloat() * 256.0;
-
-        for (int i = 0; i < 256; ++i) {
-            perm[i] = i;
-        }
-        for (int i = 0; i < 256; ++i) {
-            int pos = random.nextInt(256 - i) + i;
-            int old = perm[i];
-            perm[i] = perm[pos];
-            perm[pos] = old;
-            perm[i + 256] = perm[i];
-        }
-    }
 
     public PerlinNoise(SplittableRandom random) {
         this.offsetX = random.nextDouble() * 256.0;

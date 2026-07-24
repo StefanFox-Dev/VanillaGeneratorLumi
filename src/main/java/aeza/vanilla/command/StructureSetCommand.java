@@ -9,7 +9,7 @@ import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
 import cn.nukkit.level.Location;
 
-import java.util.Random;
+import java.util.SplittableRandom;
 
 public class StructureSetCommand extends Command {
 
@@ -32,7 +32,7 @@ public class StructureSetCommand extends Command {
         }
 
         String category = args[0].toLowerCase();
-        Random rand = new Random();
+        SplittableRandom rand = new SplittableRandom();
 
         int px = player.getFloorX();
         int py = player.getFloorY();
