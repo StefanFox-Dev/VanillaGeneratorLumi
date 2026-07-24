@@ -29,16 +29,14 @@ public class GroundGenerator {
 
     public void generateTerrainColumn(FullChunk chunk, SplittableRandom random, int blockX, int blockZ, int biome, double surfaceNoise) {
         int seaLevel = 64;
-        int topId = topBlockId;
-        int topMeta = topBlockMeta;
-        int groundId = groundBlockId;
-        int groundMeta = groundBlockMeta;
 
         int surfaceHeight = Math.max((int) (surfaceNoise / 3.0 + 3.0 + random.nextDouble() * 0.25), 1);
         int deep = -1;
 
         int minY = 0;
         int maxY = 255;
+
+        boolean isDesert = (topBlockId == BlockID.SAND);
 
         for (int y = maxY; y >= minY; --y) {
             if (y <= minY + random.nextInt(bedrockRoughness)) {
@@ -49,37 +47,44 @@ public class GroundGenerator {
                     deep = -1;
                 } else if (matId == BlockID.STONE) {
                     if (deep == -1) {
-                        if (y >= seaLevel - 5 && y <= seaLevel) {
-                            topId = topBlockId;
-                            topMeta = topBlockMeta;
-                            groundId = groundBlockId;
-                            groundMeta = groundBlockMeta;
-                        }
-
                         deep = surfaceHeight;
-                        if (y >= seaLevel - 2) {
-                            chunk.setBlockId(blockX, y, blockZ, topId);
-                            chunk.setBlockData(blockX, y, blockZ, topMeta);
-                        } else if (y < seaLevel - 8 - surfaceHeight) {
-                            topId = BlockID.AIR;
-                            topMeta = 0;
-                            groundId = BlockID.STONE;
-                            groundMeta = 0;
-                            chunk.setBlockId(blockX, y, blockZ, BlockID.GRAVEL);
+
+                        if (isDesert) {
+                            // Top 3-5 blocks of desert: SAND
+                            chunk.setBlockId(blockX, y, blockZ, BlockID.SAND);
+                            chunk.setBlockData(blockX, y, blockZ, 0);
                         } else {
-                            chunk.setBlockId(blockX, y, blockZ, groundId);
-                            chunk.setBlockData(blockX, y, blockZ, groundMeta);
+                            if (y >= seaLevel - 1) {
+                                chunk.setBlockId(blockX, y, blockZ, topBlockId);
+                                chunk.setBlockData(blockX, y, blockZ, topBlockMeta);
+                            } else {
+                                // Underwater floor
+                                chunk.setBlockId(blockX, y, blockZ, groundBlockId);
+                                chunk.setBlockData(blockX, y, blockZ, groundBlockMeta);
+                            }
                         }
                     } else if (deep > 0) {
                         --deep;
-                        chunk.setBlockId(blockX, y, blockZ, groundId);
-                        chunk.setBlockData(blockX, y, blockZ, groundMeta);
 
-                        if (deep == 0 && groundId == BlockID.SAND) {
-                            deep = random.nextInt(4) + Math.max(0, y - seaLevel - 1);
-                            groundId = BlockID.SANDSTONE;
-                            groundMeta = 0;
+                        if (isDesert) {
+                            if (deep > 0) {
+                                chunk.setBlockId(blockX, y, blockZ, BlockID.SAND);
+                                chunk.setBlockData(blockX, y, blockZ, 0);
+                            } else {
+                                // Sub-layer under desert sand: SANDSTONE
+                                chunk.setBlockId(blockX, y, blockZ, BlockID.SANDSTONE);
+                                chunk.setBlockData(blockX, y, blockZ, 0);
+                                deep = 3 + random.nextInt(3); // 3-6 layers of sandstone
+                                isDesert = false; // Next layers below sandstone revert to natural stone
+                            }
+                        } else {
+                            chunk.setBlockId(blockX, y, blockZ, groundBlockId);
+                            chunk.setBlockData(blockX, y, blockZ, groundBlockMeta);
                         }
+                    } else {
+                        // Deep underground: pure solid STONE
+                        chunk.setBlockId(blockX, y, blockZ, BlockID.STONE);
+                        chunk.setBlockData(blockX, y, blockZ, 0);
                     }
                 }
             }
