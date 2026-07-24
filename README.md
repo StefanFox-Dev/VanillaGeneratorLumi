@@ -84,6 +84,6 @@ gradlew.bat shadowJar
 
 ---
 
-## 🛠 Лицензия и Авторство
-* **Автор**: StefanFox-Dev
-* **Разработано для**: AEZAMINE / Lumi Core Community
+## 🛠 Авторство
+* **Автор**: Community
+* **Разработано с помощью**: Antigravity AI
