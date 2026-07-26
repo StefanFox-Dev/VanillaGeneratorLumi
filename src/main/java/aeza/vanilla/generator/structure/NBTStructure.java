@@ -565,6 +565,17 @@ public class NBTStructure {
 
         List<PlacedBlockRecord> placedRecords = new ArrayList<>();
 
+        // Fast O(1) spatial grid for instant block-below queries (e.g. door upper half check)
+        StructureBlock[][][] spatialGrid = null;
+        if (sizeX > 0 && sizeY > 0 && sizeZ > 0 && sizeX <= 256 && sizeY <= 256 && sizeZ <= 256) {
+            spatialGrid = new StructureBlock[sizeX][sizeY][sizeZ];
+            for (StructureBlock b : blocks) {
+                if (b.x >= 0 && b.x < sizeX && b.y >= 0 && b.y < sizeY && b.z >= 0 && b.z < sizeZ) {
+                    spatialGrid[b.x][b.y][b.z] = b;
+                }
+            }
+        }
+
         // 1. Fill foundation downwards so structure houses never float in the air
         for (StructureBlock b : blocks) {
             if (b.y == 0 && b.stateIndex >= 0 && b.stateIndex < palette.size()) {
@@ -599,20 +610,24 @@ public class NBTStructure {
 
                     int targetMeta = state.meta;
 
-                    // Fix 2-block door upper half meta bit (0x8)
-                    if (isDoorBlock(state.id)) {
-                        boolean isUpperHalf = false;
-                        for (StructureBlock other : blocks) {
-                            if (other.x == b.x && other.z == b.z && other.y == b.y - 1) {
-                                BlockState belowState = palette.get(other.stateIndex);
-                                if (belowState != null && isDoorBlock(belowState.id)) {
-                                    isUpperHalf = true;
+                    // Fast O(1) check for 2-block door upper half meta bit (0x8)
+                    if (isDoorBlock(state.id) && b.y > 0) {
+                        StructureBlock below = null;
+                        if (spatialGrid != null && b.x < sizeX && b.z < sizeZ && (b.y - 1) < sizeY) {
+                            below = spatialGrid[b.x][b.y - 1][b.z];
+                        } else {
+                            for (StructureBlock other : blocks) {
+                                if (other.x == b.x && other.z == b.z && other.y == b.y - 1) {
+                                    below = other;
                                     break;
                                 }
                             }
                         }
-                        if (isUpperHalf) {
-                            targetMeta |= 8;
+                        if (below != null && below.stateIndex >= 0 && below.stateIndex < palette.size()) {
+                            BlockState belowState = palette.get(below.stateIndex);
+                            if (belowState != null && isDoorBlock(belowState.id)) {
+                                targetMeta |= 8;
+                            }
                         }
                     }
 

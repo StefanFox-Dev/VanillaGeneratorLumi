@@ -12,6 +12,22 @@ import java.util.SplittableRandom;
 
 public class StructurePopulator extends Populator {
 
+    private static final boolean[] SOLID_GROUND_BLOCKS = new boolean[1024];
+
+    static {
+        SOLID_GROUND_BLOCKS[BlockID.GRASS] = true;
+        SOLID_GROUND_BLOCKS[BlockID.DIRT] = true;
+        SOLID_GROUND_BLOCKS[BlockID.STONE] = true;
+        SOLID_GROUND_BLOCKS[BlockID.SAND] = true;
+        SOLID_GROUND_BLOCKS[BlockID.PODZOL] = true;
+        SOLID_GROUND_BLOCKS[BlockID.DEEPSLATE] = true;
+        SOLID_GROUND_BLOCKS[BlockID.SNOW_LAYER] = true;
+    }
+
+    private static boolean isSolidGround(int id) {
+        return id >= 0 && id < 1024 && SOLID_GROUND_BLOCKS[id];
+    }
+
     public StructurePopulator() {
         StructureManager.init();
     }
@@ -22,7 +38,7 @@ public class StructurePopulator extends Populator {
             if (id == BlockID.WATER || id == BlockID.STILL_WATER) {
                 return 0; // Water surface is NOT valid ground for land structures!
             }
-            if (id == BlockID.GRASS || id == BlockID.DIRT || id == BlockID.STONE || id == BlockID.SAND || id == BlockID.PODZOL || id == BlockID.DEEPSLATE || id == BlockID.SNOW_LAYER) {
+            if (isSolidGround(id)) {
                 return y + 1;
             }
         }

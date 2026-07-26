@@ -64,10 +64,12 @@ public class OverworldGenerator extends Normal {
         var chunk = getChunkManager().getChunk(chunkX, chunkZ);
         if (chunk != null) {
             if (this.customSelector != null) {
+                int baseX = chunkX << 4;
+                int baseZ = chunkZ << 4;
                 for (int x = 0; x < 16; x++) {
+                    int worldX = baseX + x;
                     for (int z = 0; z < 16; z++) {
-                        int worldX = (chunkX << 4) + x;
-                        int worldZ = (chunkZ << 4) + z;
+                        int worldZ = baseZ + z;
                         Biome picked = this.customSelector.pickBiome(worldX, worldZ);
                         if (picked != null) {
                             chunk.setBiomeId(x, z, picked.getId());

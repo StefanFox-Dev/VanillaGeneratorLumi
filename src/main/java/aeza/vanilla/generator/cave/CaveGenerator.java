@@ -16,6 +16,22 @@ public class CaveGenerator {
     private static final int MIN_CAVE_Y = 5;
     private static final int MAX_CAVE_Y = 55;
 
+    private static final boolean[] CARVABLE_BLOCKS = new boolean[1024];
+
+    static {
+        CARVABLE_BLOCKS[BlockID.STONE] = true;
+        CARVABLE_BLOCKS[BlockID.DIRT] = true;
+        CARVABLE_BLOCKS[BlockID.GRAVEL] = true;
+        CARVABLE_BLOCKS[BlockID.GRASS] = true;
+        CARVABLE_BLOCKS[BlockID.SAND] = true;
+        CARVABLE_BLOCKS[BlockID.SANDSTONE] = true;
+        CARVABLE_BLOCKS[BlockID.DEEPSLATE] = true;
+    }
+
+    private static boolean isCarvable(int id) {
+        return id >= 0 && id < 1024 && CARVABLE_BLOCKS[id];
+    }
+
     private final long seed;
     private final SimplexOctaveGenerator flowNoise;
 
@@ -133,7 +149,7 @@ public class CaveGenerator {
                     float dy = y - centerY;
                     if (dxSq + dy * dy + dzSq <= radiusSq) {
                         int cur = chunk.getBlockId(localX, y, localZ);
-                        if (cur == BlockID.STONE || cur == BlockID.DIRT || cur == BlockID.GRAVEL || cur == BlockID.GRASS || cur == BlockID.SAND || cur == BlockID.SANDSTONE || cur == BlockID.DEEPSLATE) {
+                        if (isCarvable(cur)) {
                             chunk.setBlockId(localX, y, localZ, BlockID.AIR);
                         }
                     }
@@ -173,7 +189,7 @@ public class CaveGenerator {
                     float dy = (y - centerY) / radY;
                     if (dxSq + dy * dy + dzSq <= 1.0f) {
                         int cur = chunk.getBlockId(localX, y, localZ);
-                        if (cur == BlockID.STONE || cur == BlockID.DIRT || cur == BlockID.GRAVEL || cur == BlockID.GRASS || cur == BlockID.SAND || cur == BlockID.SANDSTONE || cur == BlockID.DEEPSLATE) {
+                        if (isCarvable(cur)) {
                             chunk.setBlockId(localX, y, localZ, BlockID.AIR);
                         }
                     }
