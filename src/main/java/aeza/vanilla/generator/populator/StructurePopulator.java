@@ -170,7 +170,17 @@ public class StructurePopulator extends Populator {
             }
         }
 
-        // 4. Igloo (~every 20 chunks in cold / snow biomes)
+        // 4. Trail Ruins (~every 22 chunks in Taigas, Birches & Old Growth Forests)
+        if (surfaceY >= 62 && (biome == BiomeIds.TAIGA || biome == BiomeIds.MEGA_TAIGA || biome == BiomeIds.BIRCH_FOREST) && ((chunkX & 21) == 5) && ((chunkZ & 21) == 13)) {
+            NBTStructure trailRuins = StructureManager.getRandomStructure("trail_ruins", random);
+            if (trailRuins != null) {
+                trailRuins.place(world, "trail_ruins", baseX + 2, Math.max(50, surfaceY - 6), baseZ + 2);
+                StructureManager.registerGeneratedStructure(worldName, "trail_ruins", baseX + 2, Math.max(50, surfaceY - 6), baseZ + 2);
+                return;
+            }
+        }
+
+        // 5. Igloo (~every 20 chunks in cold / snow biomes)
         if (surfaceY >= 62 && (biome == BiomeIds.ICE_PLAINS || biome == BiomeIds.COLD_TAIGA) && ((chunkX & 19) == 9) && ((chunkZ & 19) == 9)) {
             NBTStructure top = StructureManager.getRandomStructure("igloo/igloo_top_trapdoor", random);
             if (top == null) top = StructureManager.getRandomStructure("igloo/igloo_top_no_trapdoor", random);
@@ -198,7 +208,7 @@ public class StructurePopulator extends Populator {
             }
         }
 
-        // 5. Ruined Portal (~every 18 chunks)
+        // 6. Ruined Portal (~every 18 chunks)
         if (surfaceY >= 62 && ((chunkX & 17) == 4) && ((chunkZ & 17) == 10)) {
             NBTStructure portal = StructureManager.getRandomStructure("ruined_portal", random);
             if (portal != null) {
@@ -208,7 +218,7 @@ public class StructurePopulator extends Populator {
             }
         }
 
-        // 6. Pillager Outpost (~every 24 chunks)
+        // 7. Pillager Outpost (~every 24 chunks)
         if (surfaceY >= 62 && ((chunkX & 23) == 7) && ((chunkZ & 23) == 15)) {
             NBTStructure outpost = StructureManager.getRandomStructure("pillageroutpost", random);
             if (outpost != null) {
@@ -218,15 +228,26 @@ public class StructurePopulator extends Populator {
             }
         }
 
-        // 7. Shipwreck / Ruins (~every 16 chunks in oceans)
-        if ((biome == BiomeIds.OCEAN || biome == BiomeIds.DEEP_OCEAN || biome == BiomeIds.FROZEN_OCEAN) && ((chunkX & 15) == 6) && ((chunkZ & 15) == 10)) {
-            NBTStructure shipwreck = StructureManager.getRandomStructure("shipwreck", random);
-            if (shipwreck == null) {
-                shipwreck = StructureManager.getRandomStructure("ruin", random);
+        // 8. Overworld Fossils (~every 28 chunks underground in Deserts & Swamps)
+        if ((biome == BiomeIds.DESERT || biome == BiomeIds.SWAMPLAND) && ((chunkX & 27) == 3) && ((chunkZ & 27) == 19)) {
+            NBTStructure fossil = StructureManager.getRandomStructure("fossils", random);
+            if (fossil != null) {
+                int fossilY = 15 + random.nextInt(25);
+                fossil.place(world, "fossils", baseX + 2, fossilY, baseZ + 2);
+                StructureManager.registerGeneratedStructure(worldName, "fossils", baseX + 2, fossilY, baseZ + 2);
+                return;
             }
-            if (shipwreck != null) {
+        }
+
+        // 9. Coral Crust / Ocean Ruins / Shipwreck (~every 16 chunks in oceans)
+        if ((biome == BiomeIds.OCEAN || biome == BiomeIds.DEEP_OCEAN || biome == BiomeIds.FROZEN_OCEAN) && ((chunkX & 15) == 6) && ((chunkZ & 15) == 10)) {
+            NBTStructure coral = StructureManager.getRandomStructure("coralcrust", random);
+            if (coral == null) coral = StructureManager.getRandomStructure("shipwreck", random);
+            if (coral == null) coral = StructureManager.getRandomStructure("ruin", random);
+
+            if (coral != null) {
                 int oceanY = chunk.getHighestBlockAt(8, 8);
-                shipwreck.place(world, "shipwreck", baseX + 2, Math.max(35, oceanY - 2), baseZ + 2);
+                coral.place(world, "shipwreck", baseX + 2, Math.max(35, oceanY - 2), baseZ + 2);
                 StructureManager.registerGeneratedStructure(worldName, "shipwreck", baseX + 2, Math.max(35, oceanY - 2), baseZ + 2);
             }
         }

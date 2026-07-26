@@ -3,8 +3,11 @@ package aeza.vanilla.generator.structure;
 import cn.nukkit.math.Vector3;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,32 +44,44 @@ public class StructureManager {
     }
 
     private static void loadClasspathStructures() {
-        String[] indexFiles = new String[] {
-            "ancient_city/city_center.nbt", "ancient_city/city.nbt", "ancient_city/structures.nbt", "ancient_city/walls.nbt",
-            "bastion/treasure.nbt", "bastion/bridge.nbt", "bastion/hoglin_stable.nbt", "bastion/units.nbt",
-            "mansion/entrance.nbt", "mansion/1x1_a1.nbt", "mansion/1x1_a2.nbt", "mansion/1x2_a1.nbt", "mansion/2x2_a1.nbt",
-            "igloo/igloo_top_trapdoor.nbt", "igloo/igloo_top_no_trapdoor.nbt", "igloo/igloo_middle.nbt", "igloo/igloo_bottom.nbt",
-            "village/plains/town_centers.nbt", "village/plains/houses.nbt",
-            "village/desert/town_centers.nbt", "village/desert/houses.nbt",
-            "village/savanna/town_centers.nbt", "village/savanna/houses.nbt",
-            "village/taiga/town_centers.nbt", "village/taiga/houses.nbt",
-            "village/snowy/town_centers.nbt", "village/snowy/houses.nbt",
-            "pillageroutpost/watchtower.nbt", "ruined_portal/portal.nbt", "shipwreck/shipwreck.nbt", "ruin/ocean_ruin.nbt"
-        };
+        List<String> filesToLoad = new ArrayList<>();
+        try (InputStream manifestIn = StructureManager.class.getClassLoader().getResourceAsStream("structures_manifest.txt")) {
+            if (manifestIn != null) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(manifestIn, StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        line = line.trim();
+                        if (!line.isEmpty()) {
+                            filesToLoad.add(line);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load structures_manifest.txt", e);
+        }
 
-        for (String relativePath : indexFiles) {
+        int count = 0;
+        for (String relativePath : filesToLoad) {
             String resPath = "structures/" + relativePath;
             try (InputStream in = StructureManager.class.getClassLoader().getResourceAsStream(resPath)) {
                 if (in != null) {
                     NBTStructure s = NBTStructure.loadFromStream(in);
                     if (s != null) {
-                        registerStructure(relativePath.replace(".nbt", ""), s);
+                        String key = relativePath;
+                        int extIdx = key.lastIndexOf('.');
+                        if (extIdx != -1) {
+                            key = key.substring(0, extIdx);
+                        }
+                        registerStructure(key, s);
+                        count++;
                     }
                 }
             } catch (Exception e) {
                 log.warn("Failed to load classpath structure {}", resPath);
             }
         }
+        log.info("Successfully loaded {} NBT structures from classpath manifest into StructureManager.", count);
     }
 
     private static void loadExternalStructures() {
