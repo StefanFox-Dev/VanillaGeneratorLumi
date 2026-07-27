@@ -1,6 +1,5 @@
 package aeza.vanilla.generator.populator;
 
-import aeza.vanilla.generator.structure.NBTStructure;
 import aeza.vanilla.generator.structure.StructureManager;
 import cn.nukkit.block.BlockID;
 import cn.nukkit.level.ChunkManager;
@@ -30,15 +29,11 @@ public class EndStructurePopulator extends Populator {
         int baseZ = chunkZ << 4;
         String worldName = chunk.getProvider() != null && chunk.getProvider().getLevel() != null ? chunk.getProvider().getLevel().getName() : "the_end";
 
-        // End City (~every 8 chunks)
+        // End City (~every 8 chunks on outer End islands)
         if (((chunkX & 7) == 4) && ((chunkZ & 7) == 4)) {
             int surfaceY = findEndGroundY(chunk, 8, 8);
             if (surfaceY > 30) {
-                NBTStructure endCity = StructureManager.getRandomStructure("endcity", random);
-                if (endCity != null) {
-                    endCity.place(world, baseX, surfaceY, baseZ);
-                    StructureManager.registerGeneratedStructure(worldName, "endcity", baseX, surfaceY, baseZ);
-                }
+                EndCityPopulator.generateEndCity(world, random, baseX, surfaceY, baseZ, worldName);
             }
         }
     }
