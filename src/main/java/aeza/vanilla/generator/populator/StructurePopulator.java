@@ -143,31 +143,8 @@ public class StructurePopulator extends Populator {
 
         // 3. Woodland Mansion (~every 32 chunks in dark forest / roofed forest)
         if (surfaceY >= 62 && ((chunkX & 31) == 28) && ((chunkZ & 31) == 28)) {
-            NBTStructure entrance = StructureManager.getRandomStructure("mansion/entrance", random);
-            if (entrance == null) entrance = StructureManager.getRandomStructure("mansion", random);
-
-            if (entrance != null) {
-                entrance.place(world, "mansion", baseX, surfaceY, baseZ);
-
-                int[][] roomOffsets = new int[][] {
-                    {-16, 0}, {16, 0}, {-16, 16}, {16, 16},
-                    {-32, 0}, {32, 0}, {-32, 16}, {32, 16},
-                    {-16, -16}, {16, -16}, {0, -16}, {0, 16}
-                };
-
-                for (int[] off : roomOffsets) {
-                    NBTStructure room = StructureManager.getRandomStructure("mansion", random);
-                    if (room != null) {
-                        room.place(world, "mansion", baseX + off[0], surfaceY, baseZ + off[1]);
-                        NBTStructure room2 = StructureManager.getRandomStructure("mansion", random);
-                        if (room2 != null) {
-                            room2.place(world, "mansion", baseX + off[0], surfaceY + 7, baseZ + off[1]);
-                        }
-                    }
-                }
-                StructureManager.registerGeneratedStructure(worldName, "mansion", baseX, surfaceY, baseZ);
-                return;
-            }
+            MansionPopulator.generateMansion(world, random, baseX, surfaceY, baseZ, worldName);
+            return;
         }
 
         // 4. Trail Ruins (~every 22 chunks in Taigas, Birches & Old Growth Forests)
