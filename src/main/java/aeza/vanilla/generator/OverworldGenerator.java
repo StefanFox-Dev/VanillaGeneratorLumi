@@ -2,10 +2,13 @@ package aeza.vanilla.generator;
 
 import aeza.vanilla.generator.cave.CaveGenerator;
 import aeza.vanilla.generator.populator.BambooPopulator;
+import aeza.vanilla.generator.populator.CaveBiomePopulator;
 import aeza.vanilla.generator.populator.CherryGrovePopulator;
 import aeza.vanilla.generator.populator.FeatureRulesPopulator;
+import aeza.vanilla.generator.populator.MountainBiomePopulator;
 import aeza.vanilla.generator.populator.OceanPopulator;
 import aeza.vanilla.generator.populator.StructurePopulator;
+import aeza.vanilla.generator.populator.WarmBiomePopulator;
 import cn.nukkit.level.ChunkManager;
 import cn.nukkit.level.biome.Biome;
 import cn.nukkit.level.generator.Normal;
@@ -23,6 +26,9 @@ public class OverworldGenerator extends Normal {
     private FeatureRulesPopulator featureRulesPopulator;
     private CherryGrovePopulator cherryGrovePopulator;
     private BambooPopulator bambooPopulator;
+    private MountainBiomePopulator mountainBiomePopulator;
+    private WarmBiomePopulator warmBiomePopulator;
+    private CaveBiomePopulator caveBiomePopulator;
 
     public OverworldGenerator() {
         super();
@@ -47,6 +53,9 @@ public class OverworldGenerator extends Normal {
         this.featureRulesPopulator = new FeatureRulesPopulator();
         this.cherryGrovePopulator = new CherryGrovePopulator();
         this.bambooPopulator = new BambooPopulator();
+        this.mountainBiomePopulator = new MountainBiomePopulator();
+        this.warmBiomePopulator = new WarmBiomePopulator();
+        this.caveBiomePopulator = new CaveBiomePopulator();
     }
 
     @Override
@@ -93,6 +102,9 @@ public class OverworldGenerator extends Normal {
             long chunkSeed = getChunkManager().getSeed() ^ (chunkX * 341873128712L + chunkZ * 132897987541L);
             SplittableRandom random = new SplittableRandom(chunkSeed);
 
+            this.mountainBiomePopulator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);
+            this.warmBiomePopulator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);
+            this.caveBiomePopulator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);
             this.cherryGrovePopulator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);
             this.bambooPopulator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);
             this.oceanPopulator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);
