@@ -19,7 +19,6 @@ public class CustomBiomeSelector {
 
     public CustomBiomeSelector(long seed) {
         NukkitRandom rand = new NukkitRandom(seed);
-        // Adjusted noise scale to 512-768 block range for smooth, rich biome transitions
         this.temperature = new SimplexF(rand, 2F, 1F / 8F, 1F / 512f);
         this.rainfall = new SimplexF(rand, 2F, 1F / 8F, 1F / 512f);
         this.river = new SimplexF(rand, 6f, 2 / 4f, 1 / 384f);
@@ -33,7 +32,12 @@ public class CustomBiomeSelector {
         float temp = this.temperature.noise2D(x, z, true);
         float rain = this.rainfall.noise2D(x, z, true);
 
-        // 1. Ocean Biomes (Warm, Lukewarm, Normal, Cold, Frozen)
+        // 1. Rare Mushroom Island in deep oceans
+        if (noiseOcean < -0.38f && temp > -0.1f && temp < 0.1f && rain > 0.2f) {
+            return Biome.getBiome(BiomeIds.MUSHROOM_ISLAND);
+        }
+
+        // 2. Ocean Biomes (Warm, Lukewarm, Normal, Cold, Frozen)
         if (noiseOcean < -0.25f) {
             boolean isDeep = noiseOcean < -0.45f;
 
@@ -49,7 +53,7 @@ public class CustomBiomeSelector {
             return Biome.getBiome(isDeep ? BiomeIds.DEEP_OCEAN : BiomeIds.OCEAN);
         }
 
-        // 2. River Systems
+        // 3. River Systems
         if (noiseRiver > -0.03f && noiseRiver < 0.03f) {
             if (temp < -0.35f) {
                 return EnumBiome.FROZEN_RIVER.biome;
@@ -59,8 +63,8 @@ public class CustomBiomeSelector {
 
         float hillNoise = hills.noise2D(x, z, true);
 
-        // 3. Mountain Biomes (Peaks, Slopes, Groves, Meadows)
-        if (hillNoise > 0.52f) { // High Peaks
+        // 4. Mountain Biomes (Peaks, Slopes, Groves, Meadows)
+        if (hillNoise > 0.52f) {
             if (temp < -0.35f) {
                 return Biome.getBiome(BiomeIds.FROZEN_PEAKS);
             } else if (temp < 0.1f) {
@@ -69,7 +73,7 @@ public class CustomBiomeSelector {
                 return Biome.getBiome(BiomeIds.STONY_PEAKS);
             }
             return EnumBiome.ICE_MOUNTAINS.biome;
-        } else if (hillNoise > 0.35f) { // Mountain Slopes & Groves
+        } else if (hillNoise > 0.35f) {
             if (temp > -0.15f && temp < 0.40f && rain > 0.1f) {
                 return CHERRY_GROVE_BIOME;
             } else if (temp < -0.25f) {
@@ -78,15 +82,15 @@ public class CustomBiomeSelector {
                 return Biome.getBiome(BiomeIds.MOUNTAIN_GROVE);
             }
             return EnumBiome.EXTREME_HILLS.biome;
-        } else if (hillNoise > 0.22f) { // Foothills & Meadows
+        } else if (hillNoise > 0.22f) {
             if (temp > -0.1f && temp < 0.35f) {
                 return Biome.getBiome(BiomeIds.MOUNTAIN_MEADOW);
             }
             return Biome.getBiome(BiomeIds.WINDSWEPT_HILLS);
         }
 
-        // 4. Warm Biomes (Desert, Savanna, Badlands, Wooded Badlands, Eroded Badlands)
-        if (temp > 0.45f) {
+        // 5. Warm Biomes (Desert, Savanna, Badlands, Wooded Badlands, Eroded Badlands, Jungle)
+        if (temp > 0.38f) {
             if (rain < -0.40f) {
                 return EnumBiome.DESERT.biome;
             } else if (rain < -0.20f) {
@@ -104,7 +108,12 @@ public class CustomBiomeSelector {
             return EnumBiome.JUNGLE.biome;
         }
 
-        // 5. Temperate & Cold Biomes
+        // 6. Dark Forest / Roofed Forest (Dark Oak Trees & Woodland Mansion Spawn!)
+        if (temp > 0.0f && temp < 0.35f && rain > 0.35f) {
+            return EnumBiome.ROOFED_FOREST.biome;
+        }
+
+        // 7. Temperate & Cold Biomes
         if (temp < -0.35f) {
             if (rain < 0f) {
                 return EnumBiome.ICE_PLAINS.biome;
