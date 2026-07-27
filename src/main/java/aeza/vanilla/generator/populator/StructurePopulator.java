@@ -97,48 +97,10 @@ public class StructurePopulator extends Populator {
             }
         }
 
-        // 2. Underground Ancient City Generation (~every 32 chunks deep underground)
+        // 2. Underground Ancient City Generation (~every 32 chunks deep underground in deepslate layer above bedrock)
         if (((chunkX & 31) == 16) && ((chunkZ & 31) == 16)) {
-            int ancientY = 22; // Deep underground in deepslate layer
-            NBTStructure center = StructureManager.getRandomStructure("ancient_city/city_center", random);
-            if (center == null) center = StructureManager.getRandomStructure("ancient_city", random);
-
-            if (center != null) {
-                center.place(world, "ancient_city", baseX, ancientY, baseZ);
-
-                int[][] offsets = new int[][] {
-                    {-24, -24}, {0, -28}, {24, -24},
-                    {-28, 0},             {28, 0},
-                    {-24, 24},  {0, 28},  {24, 24}
-                };
-
-                for (int[] off : offsets) {
-                    NBTStructure sub = StructureManager.getRandomStructure("ancient_city/city", random);
-                    if (sub == null) sub = StructureManager.getRandomStructure("ancient_city/structures", random);
-                    if (sub == null) sub = StructureManager.getRandomStructure("ancient_city/walls", random);
-                    if (sub != null) {
-                        sub.place(world, "ancient_city", baseX + off[0], ancientY, baseZ + off[1]);
-                    }
-                }
-
-                // Populate Ancient City chests with Echo Shards and Disc 5
-                for (int dx = -30; dx <= 30; dx += 2) {
-                    for (int dy = 0; dy <= 20; dy++) {
-                        for (int dz = -30; dz <= 30; dz += 2) {
-                            int bx = baseX + dx;
-                            int by = ancientY + dy;
-                            int bz = baseZ + dz;
-                            int id = world.getBlockIdAt(bx, by, bz);
-                            if (id == BlockID.CHEST || id == BlockID.TRAPPED_CHEST || id == BlockID.BARREL) {
-                                LootPopulator.populateAncientCityChest(world, bx, by, bz);
-                            }
-                        }
-                    }
-                }
-
-                StructureManager.registerGeneratedStructure(worldName, "ancient_city", baseX, ancientY, baseZ);
-                return;
-            }
+            AncientCityPopulator.generateAncientCity(world, random, baseX, 22, baseZ, worldName);
+            return;
         }
 
         // 3. Woodland Mansion (~every 32 chunks in dark forest / roofed forest)
