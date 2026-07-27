@@ -97,9 +97,9 @@ public class StructurePopulator extends Populator {
             }
         }
 
-        // 2. Underground Ancient City Generation (~every 32 chunks deep underground in deepslate layer above bedrock)
+        // 2. Underground Ancient City Generation (~every 32 chunks at Y = -51 deep underground in deepslate layer right above Bedrock -64)
         if (((chunkX & 31) == 16) && ((chunkZ & 31) == 16)) {
-            AncientCityPopulator.generateAncientCity(world, random, baseX, 22, baseZ, worldName);
+            AncientCityPopulator.generateAncientCity(world, random, baseX, -51, baseZ, worldName);
             return;
         }
 
@@ -171,7 +171,7 @@ public class StructurePopulator extends Populator {
         if ((biome == BiomeIds.DESERT || biome == BiomeIds.SWAMPLAND) && ((chunkX & 27) == 3) && ((chunkZ & 27) == 19)) {
             NBTStructure fossil = StructureManager.getRandomStructure("fossils", random);
             if (fossil != null) {
-                int fossilY = 15 + random.nextInt(25);
+                int fossilY = -30 + random.nextInt(25);
                 fossil.place(world, "fossils", baseX + 2, fossilY, baseZ + 2);
                 StructureManager.registerGeneratedStructure(worldName, "fossils", baseX + 2, fossilY, baseZ + 2);
                 return;

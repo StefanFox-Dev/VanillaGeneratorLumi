@@ -13,18 +13,18 @@ public class AncientCityPopulator {
     private static final int CITY_RADIUS = 32;
 
     public static void generateAncientCity(ChunkManager world, SplittableRandom random, int startX, int startY, int startZ, String worldName) {
-        int cityY = Math.max(16, startY); // Y = 20-22 deep underground above bedrock
+        int cityY = startY; // Vanilla Y = -51 deep underground right above Bedrock (-64)
 
-        // 1. Carve a hollow underground cavern (64x64x30 blocks)
+        // 1. Carve a hollow underground cavern (64x64x30 blocks) in Deepslate layer
         for (int x = -CITY_RADIUS; x <= CITY_RADIUS; x++) {
             for (int z = -CITY_RADIUS; z <= CITY_RADIUS; z++) {
                 int px = startX + x;
                 int pz = startZ + z;
 
-                // Floor layer at bottom of city
+                // Floor layer at bottom of city (-52)
                 world.setBlockAt(px, cityY - 1, pz, BlockID.DEEPSLATE, 0);
 
-                // Carve air space above floor
+                // Carve air space above floor (-51 to -23)
                 for (int y = cityY; y <= cityY + 28; y++) {
                     int cur = world.getBlockIdAt(px, y, pz);
                     if (cur == BlockID.STONE || cur == BlockID.DEEPSLATE || cur == BlockID.DIRT || cur == BlockID.GRAVEL || cur == BlockID.TUFF) {
