@@ -1,5 +1,6 @@
 package aeza.vanilla.generator.ground;
 
+import aeza.vanilla.generator.biomegrid.BiomeIds;
 import cn.nukkit.block.BlockID;
 import cn.nukkit.level.format.FullChunk;
 
@@ -29,14 +30,13 @@ public class GroundGenerator {
 
     public void generateTerrainColumn(FullChunk chunk, SplittableRandom random, int blockX, int blockZ, int biome, double surfaceNoise) {
         int seaLevel = 64;
-
         int surfaceHeight = Math.max((int) (surfaceNoise / 3.0 + 3.0 + random.nextDouble() * 0.25), 1);
         int deep = -1;
 
         int minY = 0;
         int maxY = 255;
 
-        boolean isDesert = (topBlockId == BlockID.SAND);
+        boolean isDesert = (topBlockId == BlockID.SAND) || (biome == BiomeIds.DESERT || biome == BiomeIds.DESERT_HILLS || biome == BiomeIds.DESERT_MUTATED);
 
         for (int y = maxY; y >= minY; --y) {
             if (y <= minY + random.nextInt(bedrockRoughness)) {
@@ -50,7 +50,6 @@ public class GroundGenerator {
                         deep = surfaceHeight;
 
                         if (isDesert) {
-                            // Top 3-5 blocks of desert: SAND
                             chunk.setBlockId(blockX, y, blockZ, BlockID.SAND);
                             chunk.setBlockData(blockX, y, blockZ, 0);
                         } else {
@@ -58,7 +57,6 @@ public class GroundGenerator {
                                 chunk.setBlockId(blockX, y, blockZ, topBlockId);
                                 chunk.setBlockData(blockX, y, blockZ, topBlockMeta);
                             } else {
-                                // Underwater floor
                                 chunk.setBlockId(blockX, y, blockZ, groundBlockId);
                                 chunk.setBlockData(blockX, y, blockZ, groundBlockMeta);
                             }
@@ -71,18 +69,16 @@ public class GroundGenerator {
                                 chunk.setBlockId(blockX, y, blockZ, BlockID.SAND);
                                 chunk.setBlockData(blockX, y, blockZ, 0);
                             } else {
-                                // Sub-layer under desert sand: SANDSTONE
                                 chunk.setBlockId(blockX, y, blockZ, BlockID.SANDSTONE);
                                 chunk.setBlockData(blockX, y, blockZ, 0);
-                                deep = 3 + random.nextInt(3); // 3-6 layers of sandstone
-                                isDesert = false; // Next layers below sandstone revert to natural stone
+                                deep = 4 + random.nextInt(3);
+                                isDesert = false;
                             }
                         } else {
                             chunk.setBlockId(blockX, y, blockZ, groundBlockId);
                             chunk.setBlockData(blockX, y, blockZ, groundBlockMeta);
                         }
                     } else {
-                        // Deep underground: pure solid STONE
                         chunk.setBlockId(blockX, y, blockZ, BlockID.STONE);
                         chunk.setBlockData(blockX, y, blockZ, 0);
                     }

@@ -245,6 +245,24 @@ public class NBTStructure {
         BLOCK_NAME_TO_ID.put("ladder", BlockID.LADDER);
         BLOCK_NAME_TO_ID.put("purpur_block", BlockID.PURPUR_BLOCK);
         BLOCK_NAME_TO_ID.put("end_stone", BlockID.END_STONE);
+
+        // Modern 1.14 - 1.20 Village Workstations, Bell & Decor
+        BLOCK_NAME_TO_ID.put("bell", 461);
+        BLOCK_NAME_TO_ID.put("lantern", 463);
+        BLOCK_NAME_TO_ID.put("soul_lantern", 464);
+        BLOCK_NAME_TO_ID.put("campfire", 462);
+        BLOCK_NAME_TO_ID.put("soul_campfire", 465);
+        BLOCK_NAME_TO_ID.put("sweet_berry_bush", 460);
+        BLOCK_NAME_TO_ID.put("composter", 472);
+        BLOCK_NAME_TO_ID.put("grindstone", 473);
+        BLOCK_NAME_TO_ID.put("cartography_table", 474);
+        BLOCK_NAME_TO_ID.put("fletching_table", 475);
+        BLOCK_NAME_TO_ID.put("smithing_table", 476);
+        BLOCK_NAME_TO_ID.put("smoker", 477);
+        BLOCK_NAME_TO_ID.put("blast_furnace", 478);
+        BLOCK_NAME_TO_ID.put("stonecutter", 479);
+        BLOCK_NAME_TO_ID.put("lectern", 480);
+        BLOCK_NAME_TO_ID.put("loom", 481);
     }
 
     private int sizeX;

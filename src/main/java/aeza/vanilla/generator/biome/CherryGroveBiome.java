@@ -1,10 +1,9 @@
 package aeza.vanilla.generator.biome;
 
+import aeza.vanilla.generator.biomegrid.BiomeIds;
 import cn.nukkit.level.biome.type.GrassyBiome;
 
 public class CherryGroveBiome extends GrassyBiome {
-
-    public static final int CHERRY_GROVE_ID = 182;
 
     public CherryGroveBiome() {
         super();
@@ -19,6 +18,11 @@ public class CherryGroveBiome extends GrassyBiome {
 
     @Override
     public int getId() {
-        return CHERRY_GROVE_ID;
+        return BiomeIds.CHERRY_GROVE;
+    }
+
+    @Override
+    public boolean canRain() {
+        return true;
     }
 }

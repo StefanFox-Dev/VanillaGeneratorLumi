@@ -22,15 +22,20 @@ public class WarmBiomePopulator extends Populator {
                 int worldZ = baseZ + z;
                 int y = chunk.getHighestBlockAt(x, z);
 
-                if (y <= 30) continue;
+                if (y <= 62) continue; // Prevent spawning land flora underwater
+                int topBlock = chunk.getBlockId(x, y, z);
+                if (topBlock == BlockID.WATER || topBlock == BlockID.STILL_WATER) continue;
+                int groundBlock = chunk.getBlockId(x, y - 1, z);
 
-                // 1. Desert Biomes (Cacti & Dead Bushes)
+                // 1. Desert Biomes (Cacti & Dead Bushes on Sand)
                 if (biome == BiomeIds.DESERT || biome == BiomeIds.DESERT_HILLS || biome == BiomeIds.DESERT_MUTATED) {
-                    double roll = random.nextDouble();
-                    if (roll < 0.015) {
-                        new Cactus().generate(world, random, worldX, y, worldZ);
-                    } else if (roll < 0.04) {
-                        chunk.setBlockId(x, y, z, BlockID.DEAD_BUSH);
+                    if (groundBlock == BlockID.SAND) {
+                        double roll = random.nextDouble();
+                        if (roll < 0.015) {
+                            new Cactus().generate(world, random, worldX, y, worldZ);
+                        } else if (roll < 0.04) {
+                            chunk.setBlockId(x, y, z, BlockID.DEAD_BUSH);
+                        }
                     }
                 }
                 // 2. Badlands, Wooded Badlands & Eroded Badlands (Terracotta Strata & High Gold Ore)
@@ -53,9 +58,9 @@ public class WarmBiomePopulator extends Populator {
                         }
                     }
                 }
-                // 3. Savanna & Windswept Savanna (Acacia Trees & Tall Grass)
+                // 3. Savanna & Windswept Savanna (Acacia Trees & Tall Grass on Grass)
                 else if (biome == BiomeIds.SAVANNA || biome == BiomeIds.SAVANNA_PLATEAU || biome == BiomeIds.WINDSWEPT_SAVANNA) {
-                    if (random.nextDouble() < 0.03) {
+                    if (groundBlock == BlockID.GRASS && random.nextDouble() < 0.03) {
                         chunk.setBlockId(x, y, z, BlockID.TALL_GRASS);
                         chunk.setBlockData(x, y, z, 1);
                     }

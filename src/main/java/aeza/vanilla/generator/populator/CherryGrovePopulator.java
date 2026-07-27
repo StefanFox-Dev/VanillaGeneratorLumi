@@ -1,6 +1,6 @@
 package aeza.vanilla.generator.populator;
 
-import aeza.vanilla.generator.biome.CherryGroveBiome;
+import aeza.vanilla.generator.biomegrid.BiomeIds;
 import aeza.vanilla.generator.tree.CherryTree;
 import cn.nukkit.block.BlockID;
 import cn.nukkit.entity.Entity;
@@ -22,7 +22,7 @@ public class CherryGrovePopulator extends Populator {
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
                 int biome = chunk.getBiomeId(x, z);
-                if (biome != CherryGroveBiome.CHERRY_GROVE_ID) continue;
+                if (biome != BiomeIds.CHERRY_GROVE) continue;
 
                 int worldX = baseX + x;
                 int worldZ = baseZ + z;
@@ -41,41 +41,28 @@ public class CherryGrovePopulator extends Populator {
                         cherryCount++;
                     }
 
-                    // 2. Scatter Pink Petals carpet (ID 804)
-                    else if (random.nextInt(3) == 0) {
-                        world.setBlockAt(worldX, highestY + 1, worldZ, BlockID.PINK_PETALS, random.nextInt(4));
-                    }
-
-                    // 3. Scatter Flowers (Dandelions & Poppies)
-                    else if (random.nextInt(16) == 0) {
-                        int flowerId = random.nextBoolean() ? BlockID.DANDELION : BlockID.POPPY;
-                        world.setBlockAt(worldX, highestY + 1, worldZ, flowerId, 0);
-                    }
-
-                    // 4. Scatter Grass
-                    else if (random.nextInt(5) == 0) {
-                        world.setBlockAt(worldX, highestY + 1, worldZ, BlockID.TALL_GRASS, 1);
+                    // 2. Pink Petal Carpet on Grass
+                    if (random.nextInt(4) == 0) {
+                        chunk.setBlockId(x, highestY + 1, z, BlockID.PINK_PETALS);
+                        chunk.setBlockData(x, highestY + 1, z, random.nextInt(4));
                     }
                 }
             }
         }
 
-        // 5. Spawn Cherry Grove Animals (SIGNIFICANTLY REDUCED: 8% chance per chunk, only 1-2 animals)
-        if (cherryCount > 0 && random.nextInt(100) < 8 && chunk.getProvider() != null && chunk.getProvider().getLevel() != null) {
-            var lvl = chunk.getProvider().getLevel();
-            int surfaceY = chunk.getHighestBlockAt(8, 8);
-            if (surfaceY >= 63) {
-                Location mobLoc = new Location(baseX + 8, surfaceY + 1, baseZ + 8, lvl);
+        // 3. Spawn Bees & Piggies in Cherry Groves
+        if (cherryCount > 0 && random.nextInt(6) == 0 && chunk.getProvider() != null && chunk.getProvider().getLevel() != null) {
+            int spawnX = baseX + 8;
+            int spawnZ = baseZ + 8;
+            int spawnY = chunk.getHighestBlockAt(8, 8) + 1;
 
-                try {
-                    if (random.nextBoolean()) {
-                        Entity s = Entity.createEntity("Sheep", mobLoc);
-                        if (s != null) s.spawnToAll();
-                    } else {
-                        Entity p = Entity.createEntity("Pig", mobLoc);
-                        if (p != null) p.spawnToAll();
-                    }
-                } catch (Exception ignored) {}
+            if (spawnY > 62) {
+                Location loc = new Location(spawnX, spawnY, spawnZ, chunk.getProvider().getLevel());
+                if (random.nextBoolean()) {
+                    Entity.createEntity("Bee", loc);
+                } else {
+                    Entity.createEntity("Pig", loc);
+                }
             }
         }
     }
