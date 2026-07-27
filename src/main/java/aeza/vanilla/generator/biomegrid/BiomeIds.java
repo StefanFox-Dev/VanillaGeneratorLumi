@@ -52,6 +52,7 @@ public interface BiomeIds {
     int SUNFLOWER_PLAINS = 129;
     int DESERT_MUTATED = 130;
     int EXTREME_HILLS_MUTATED = 131;
+    int WINDSWEPT_HILLS = 131;
     int FLOWER_FOREST = 132;
     int TAIGA_MUTATED = 133;
     int SWAMPLAND_MUTATED = 134;
@@ -66,8 +67,21 @@ public interface BiomeIds {
     int REDWOOD_TAIGA_HILLS_MUTATED = 161;
     int EXTREME_HILLS_PLUS_TREES_MUTATED = 162;
     int SAVANNA_MUTATED = 163;
+    int WINDSWEPT_SAVANNA = 163;
     int SAVANNA_PLATEAU_MUTATED = 164;
     int MESA_BRYCE = 165;
     int MESA_PLATEAU_STONE_MUTATED = 166;
     int MESA_PLATEAU_MUTATED = 167;
+
+    // Modern 1.18+ / 1.19+ / 1.20+ Biomes
+    int MOUNTAIN_MEADOW = 168;
+    int MOUNTAIN_GROVE = 169;
+    int SNOWY_SLOPES = 170;
+    int JAGGED_PEAKS = 171;
+    int FROZEN_PEAKS = 172;
+    int STONY_PEAKS = 173;
+    int CHERRY_GROVE = 174;
+    int DRIPSTONE_CAVES = 175;
+    int LUSH_CAVES = 176;
+    int DEEP_DARK = 177;
 }
