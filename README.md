@@ -77,3 +77,5 @@ gradlew.bat shadowJar # Windows
 | :--- | :--- | :--- |
 | `/stset <category>` | Spawns a full multi-part structure at player position | `vanillagenerator.command.stset` |
 | `/structure` | Shows detailed structure generation & biome info | `vanillagenerator.command.structure` |
+
+#lumi-plugin
