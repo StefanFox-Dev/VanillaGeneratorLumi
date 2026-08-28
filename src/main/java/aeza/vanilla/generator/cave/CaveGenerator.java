@@ -1,214 +1,98 @@
 package aeza.vanilla.generator.cave;
 
-import aeza.vanilla.generator.noise.SimplexOctaveGenerator;
 import cn.nukkit.block.BlockID;
 import cn.nukkit.level.format.FullChunk;
-
-import java.util.SplittableRandom;
+import cn.nukkit.level.generator.noise.nukkit.f.SimplexF;
+import cn.nukkit.math.NukkitRandom;
 
 public class CaveGenerator {
-    private static final double CAVE_FREQUENCY = 0.08;
-    private static final double CAVERN_FREQUENCY = 0.015;
-    private static final int TUNNEL_LENGTH_MIN = 40;
-    private static final int TUNNEL_LENGTH_MAX = 140;
-    private static final int CAVERN_SIZE_MIN = 5;
-    private static final int CAVERN_SIZE_MAX = 12;
+
+    private static final int SEA_LEVEL = 63;
     private static final int MIN_CAVE_Y = -58;
-    private static final int MAX_CAVE_Y = 160;
+    private static final int MAX_CAVE_Y = 180;
 
-    private static final boolean[] CARVABLE_BLOCKS = new boolean[1024];
-
-    static {
-        CARVABLE_BLOCKS[BlockID.STONE] = true;
-        CARVABLE_BLOCKS[BlockID.DIRT] = true;
-        CARVABLE_BLOCKS[BlockID.GRAVEL] = true;
-        CARVABLE_BLOCKS[BlockID.GRASS] = true;
-        CARVABLE_BLOCKS[BlockID.SAND] = true;
-        CARVABLE_BLOCKS[BlockID.SANDSTONE] = true;
-        CARVABLE_BLOCKS[BlockID.DEEPSLATE] = true;
-        CARVABLE_BLOCKS[BlockID.TUFF] = true;
-        CARVABLE_BLOCKS[BlockID.CALCITE] = true;
-    }
-
-    private static boolean isCarvable(int id) {
-        return id >= 0 && id < 1024 && CARVABLE_BLOCKS[id];
-    }
-
-    private final long seed;
-    private final SimplexOctaveGenerator flowNoise;
+    private final SimplexF spaghettiNoiseA;
+    private final SimplexF spaghettiNoiseB;
+    private final SimplexF cheeseNoise;
+    private final SimplexF lavaNoise;
 
     public CaveGenerator(long seed) {
-        this.seed = seed;
-        SplittableRandom flowRand = new SplittableRandom(seed + 11);
-        this.flowNoise = new SimplexOctaveGenerator(flowRand, 3);
+        NukkitRandom randA = new NukkitRandom(seed + 7711);
+        NukkitRandom randB = new NukkitRandom(seed + 9933);
+        NukkitRandom randC = new NukkitRandom(seed + 12345);
+        NukkitRandom randD = new NukkitRandom(seed + 54321);
+
+        this.spaghettiNoiseA = new SimplexF(randA, 3F, 1F / 2F, 1F / 48f);
+        this.spaghettiNoiseB = new SimplexF(randB, 3F, 1F / 2F, 1F / 48f);
+        this.cheeseNoise = new SimplexF(randC, 2F, 1F / 2F, 1F / 32f);
+        this.lavaNoise = new SimplexF(randD, 2F, 1F / 2F, 1F / 16f);
     }
 
     public void carveDirectly(FullChunk chunk, int chunkX, int chunkZ) {
         if (chunk == null) return;
-        generateRegionalCaves(chunk, chunkX, chunkZ);
-        applyLavaPools(chunk);
-    }
 
-    private void generateRegionalCaves(FullChunk chunk, int chunkX, int chunkZ) {
-        SplittableRandom rng = new SplittableRandom(seed ^ (chunkX * 341873128712L + chunkZ * 132897987541L));
-        for (int regionX = chunkX - 1; regionX <= chunkX + 1; regionX++) {
-            for (int regionZ = chunkZ - 1; regionZ <= chunkZ + 1; regionZ++) {
-                int caveAttempts = 2 + rng.nextInt(3);
-                for (int i = 0; i < caveAttempts; i++) {
-                    if (rng.nextDouble() < CAVE_FREQUENCY) {
-                        int startX = (regionX << 4) + rng.nextInt(16);
-                        int startY = MIN_CAVE_Y + rng.nextInt(MAX_CAVE_Y - MIN_CAVE_Y);
-                        int startZ = (regionZ << 4) + rng.nextInt(16);
-                        generateCaveSystem(chunk, startX, startY, startZ, chunkX, chunkZ, rng);
-                    }
-                }
+        int baseX = chunkX << 4;
+        int baseZ = chunkZ << 4;
 
-                if (rng.nextDouble() < CAVERN_FREQUENCY) {
-                    int centerX = (regionX << 4) + rng.nextInt(16);
-                    int centerY = MIN_CAVE_Y + rng.nextInt(MAX_CAVE_Y - MIN_CAVE_Y);
-                    int centerZ = (regionZ << 4) + rng.nextInt(16);
-                    generateNaturalCavern(chunk, centerX, centerY, centerZ, chunkX, chunkZ, rng);
-                }
-            }
-        }
-    }
-
-    private void generateCaveSystem(FullChunk chunk, int startX, int startY, int startZ, int targetChunkX, int targetChunkZ, SplittableRandom rng) {
-        int length = TUNNEL_LENGTH_MIN + rng.nextInt(TUNNEL_LENGTH_MAX - TUNNEL_LENGTH_MIN);
-        double x = startX;
-        double y = startY;
-        double z = startZ;
-
-        double yaw = rng.nextDouble() * Math.PI * 2.0;
-        double pitch = (rng.nextDouble() - 0.5) * 0.25;
-
-        for (int i = 0; i < length; i++) {
-            double progress = i / (double) length;
-            double baseRadius = 1.4 + rng.nextDouble() * 1.4;
-            double sizeVariation = Math.sin(progress * Math.PI * 2.4) * 0.35 + (rng.nextDouble() - 0.5) * 0.3;
-            double radius = Math.max(1.2, baseRadius + sizeVariation);
-
-            carveSphere(chunk, (int) Math.round(x), (int) Math.round(y), (int) Math.round(z), (float) radius, targetChunkX, targetChunkZ);
-
-            double noiseYaw = flowNoise.getNoise2D(x * 0.01, z * 0.01, 1.0, 1.0);
-            double noisePitch = flowNoise.getNoise2D((x + 1000) * 0.01, (z + 1000) * 0.01, 1.0, 1.0);
-            yaw += noiseYaw * 0.35;
-            pitch += noisePitch * 0.22;
-            pitch = Math.max(-0.46, Math.min(0.46, pitch));
-
-            x += Math.cos(yaw) * Math.cos(pitch) * 0.95;
-            y += Math.sin(pitch) * 0.95;
-            z += Math.sin(yaw) * Math.cos(pitch) * 0.95;
-
-            if (y < MIN_CAVE_Y + 2) {
-                y = MIN_CAVE_Y + 2;
-                pitch = Math.abs(pitch);
-            } else if (y > MAX_CAVE_Y - 2) {
-                y = MAX_CAVE_Y - 2;
-                pitch = -Math.abs(pitch);
-            }
-        }
-    }
-
-    private void generateNaturalCavern(FullChunk chunk, int centerX, int centerY, int centerZ, int targetChunkX, int targetChunkZ, SplittableRandom rng) {
-        int radiusX = CAVERN_SIZE_MIN + rng.nextInt(CAVERN_SIZE_MAX - CAVERN_SIZE_MIN);
-        int radiusY = CAVERN_SIZE_MIN + rng.nextInt(CAVERN_SIZE_MAX - CAVERN_SIZE_MIN) / 2;
-        int radiusZ = CAVERN_SIZE_MIN + rng.nextInt(CAVERN_SIZE_MAX - CAVERN_SIZE_MIN);
-
-        carveEllipsoid(chunk, centerX, centerY, centerZ, radiusX, radiusY, radiusZ, targetChunkX, targetChunkZ);
-    }
-
-    private void carveSphere(FullChunk chunk, int centerX, int centerY, int centerZ, float radius, int targetChunkX, int targetChunkZ) {
-        int minX = (int) Math.floor(centerX - radius);
-        int maxX = (int) Math.ceil(centerX + radius);
-        int minY = Math.max(-60, (int) Math.floor(centerY - radius));
-        int maxY = Math.min(300, (int) Math.ceil(centerY + radius));
-        int minZ = (int) Math.floor(centerZ - radius);
-        int maxZ = (int) Math.ceil(centerZ + radius);
-
-        int chunkMinX = targetChunkX << 4;
-        int chunkMaxX = chunkMinX + 15;
-        int chunkMinZ = targetChunkZ << 4;
-        int chunkMaxZ = chunkMinZ + 15;
-
-        if (maxX < chunkMinX || minX > chunkMaxX || maxZ < chunkMinZ || minZ > chunkMaxZ) {
-            return;
-        }
-
-        float radiusSq = radius * radius;
-
-        for (int x = Math.max(minX, chunkMinX); x <= Math.min(maxX, chunkMaxX); x++) {
-            float dx = x - centerX;
-            float dxSq = dx * dx;
-            int localX = x & 0x0f;
-
-            for (int z = Math.max(minZ, chunkMinZ); z <= Math.min(maxZ, chunkMaxZ); z++) {
-                float dz = z - centerZ;
-                float dzSq = dz * dz;
-                int localZ = z & 0x0f;
-
-                for (int y = minY; y <= maxY; y++) {
-                    float dy = y - centerY;
-                    if (dxSq + dy * dy + dzSq <= radiusSq) {
-                        int cur = chunk.getBlockId(localX, y, localZ);
-                        if (isCarvable(cur)) {
-                            chunk.setBlockId(localX, y, localZ, BlockID.AIR);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void carveEllipsoid(FullChunk chunk, int centerX, int centerY, int centerZ, float radX, float radY, float radZ, int targetChunkX, int targetChunkZ) {
-        int minX = (int) Math.floor(centerX - radX);
-        int maxX = (int) Math.ceil(centerX + radX);
-        int minY = Math.max(-60, (int) Math.floor(centerY - radY));
-        int maxY = Math.min(300, (int) Math.ceil(centerY + radY));
-        int minZ = (int) Math.floor(centerZ - radZ);
-        int maxZ = (int) Math.ceil(centerZ + radZ);
-
-        int chunkMinX = targetChunkX << 4;
-        int chunkMaxX = chunkMinX + 15;
-        int chunkMinZ = targetChunkZ << 4;
-        int chunkMaxZ = chunkMinZ + 15;
-
-        if (maxX < chunkMinX || minX > chunkMaxX || maxZ < chunkMinZ || minZ > chunkMaxZ) {
-            return;
-        }
-
-        for (int x = Math.max(minX, chunkMinX); x <= Math.min(maxX, chunkMaxX); x++) {
-            float dx = (x - centerX) / radX;
-            float dxSq = dx * dx;
-            int localX = x & 0x0f;
-
-            for (int z = Math.max(minZ, chunkMinZ); z <= Math.min(maxZ, chunkMaxZ); z++) {
-                float dz = (z - centerZ) / radZ;
-                float dzSq = dz * dz;
-                int localZ = z & 0x0f;
-
-                for (int y = minY; y <= maxY; y++) {
-                    float dy = (y - centerY) / radY;
-                    if (dxSq + dy * dy + dzSq <= 1.0f) {
-                        int cur = chunk.getBlockId(localX, y, localZ);
-                        if (isCarvable(cur)) {
-                            chunk.setBlockId(localX, y, localZ, BlockID.AIR);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void applyLavaPools(FullChunk chunk) {
         for (int x = 0; x < 16; x++) {
+            int worldX = baseX + x;
             for (int z = 0; z < 16; z++) {
-                for (int y = -59; y <= -54; y++) {
-                    if (chunk.getBlockId(x, y, z) == BlockID.AIR) {
-                        chunk.setBlockId(x, y, z, BlockID.STILL_LAVA);
+                int worldZ = baseZ + z;
+
+                for (int y = MAX_CAVE_Y; y >= MIN_CAVE_Y; y--) {
+                    int block = chunk.getBlockId(x, y, z);
+                    if (block != BlockID.STONE && block != BlockID.DEEPSLATE && block != BlockID.DIRT && block != BlockID.GRAVEL && block != BlockID.TUFF) {
+                        continue;
+                    }
+
+                    // Water Protection: Never carve into water or break the sea/river bed!
+                    if (y <= SEA_LEVEL + 2) {
+                        if (isNearWater(chunk, x, y, z)) {
+                            continue;
+                        }
+                    }
+
+                    // 1. Spaghetti Cave Tunnels (Intersection of 2 3D Noise Fields)
+                    float nA = spaghettiNoiseA.noise3D(worldX, y, worldZ, true);
+                    float nB = spaghettiNoiseB.noise3D(worldX, y, worldZ, true);
+
+                    double tunnelThreshold = 0.055;
+                    // Tunnels widen slightly deep underground
+                    if (y < 0) tunnelThreshold = 0.075;
+
+                    boolean isSpaghetti = Math.abs(nA) < tunnelThreshold && Math.abs(nB) < tunnelThreshold;
+
+                    // 2. Cheese Caverns (Large underground rooms in deep layers)
+                    boolean isCheese = false;
+                    if (y < 40 && y > -55) {
+                        float cheese = cheeseNoise.noise3D(worldX, y, worldZ, true);
+                        if (cheese < -0.42f) {
+                            isCheese = true;
+                        }
+                    }
+
+                    if (isSpaghetti || isCheese) {
+                        // Lava lake floors deep in the world (-54 to -58)
+                        if (y <= -54) {
+                            chunk.setBlockId(x, y, z, BlockID.STILL_LAVA);
+                        } else {
+                            chunk.setBlockId(x, y, z, BlockID.AIR);
+                        }
                     }
                 }
             }
         }
+    }
+
+    private boolean isNearWater(FullChunk chunk, int x, int y, int z) {
+        for (int dy = 0; dy <= 4; dy++) {
+            int checkY = y + dy;
+            if (checkY >= 320) break;
+            int id = chunk.getBlockId(x, checkY, z);
+            if (id == BlockID.WATER || id == BlockID.STILL_WATER) {
+                return true;
+            }
+        }
+        return false;
     }
 }

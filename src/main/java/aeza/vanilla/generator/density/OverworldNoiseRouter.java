@@ -85,49 +85,44 @@ public class OverworldNoiseRouter {
         // Continuous Spline Continentalness curve (C in [-1.0, 1.0])
         double continentalHeight;
         if (cont < -0.45f) {
-            // Deep Ocean: 36 -> 48
             double t = smoothStep(-1.0, -0.45, cont);
-            continentalHeight = 36.0 + t * 12.0;
+            continentalHeight = 34.0 + t * 14.0; // Deep Ocean: 34 -> 48
         } else if (cont < -0.15f) {
-            // Ocean: 48 -> 58
             double t = smoothStep(-0.45, -0.15, cont);
-            continentalHeight = 48.0 + t * 10.0;
+            continentalHeight = 48.0 + t * 10.0; // Ocean: 48 -> 58
         } else if (cont < -0.04f) {
-            // Coast: 58 -> 63
             double t = smoothStep(-0.15, -0.04, cont);
-            continentalHeight = 58.0 + t * 5.0;
+            continentalHeight = 58.0 + t * 5.0; // Coast: 58 -> 63
         } else if (cont < 0.05f) {
-            // Beach / Near Shore: 63 -> 66
             double t = smoothStep(-0.04, 0.05, cont);
-            continentalHeight = 63.0 + t * 3.0;
+            continentalHeight = 63.0 + t * 3.0; // Beach: 63 -> 66
         } else if (cont < 0.35f) {
-            // Plains, Lowlands & Forests: 66 -> 76
             double t = smoothStep(0.05, 0.35, cont);
-            continentalHeight = 66.0 + t * 10.0;
+            continentalHeight = 66.0 + t * 10.0; // Plains / Forests: 66 -> 76
         } else if (cont < 0.65f) {
-            // Highlands & Plateaus: 76 -> 96
             double t = smoothStep(0.35, 0.65, cont);
-            continentalHeight = 76.0 + t * 20.0;
+            continentalHeight = 76.0 + t * 20.0; // Plateaus: 76 -> 96
         } else {
-            // Inland High Elevation: 96 -> 135
             double t = smoothStep(0.65, 1.0, cont);
-            continentalHeight = 96.0 + t * 39.0;
+            continentalHeight = 96.0 + t * 24.0; // High Elevation: 96 -> 120
         }
 
-        // Multi-octave rolling hills
-        float hill = hillNoise2D.noise2D(x, z, true) * 10.0f;
+        // Multi-octave rolling hills smoothly scaled by land factor
+        double landFactor = smoothStep(-0.15, 0.05, cont);
+        float hill = hillNoise2D.noise2D(x, z, true) * 9.0f * (float) landFactor;
 
-        // Smooth continuous mountain boost (Erosion: lower erosion = higher peaks)
-        // Smoothly scales from 0.0 at eros = 0.1 to 1.0 at eros = -0.7
-        double mountainT = smoothStep(0.1, -0.7, eros);
-        double peakBonus = (0.5 + 0.5 * Math.abs(weird)) * 130.0;
-        double mountainElevation = mountainT * peakBonus;
+        // Smooth continuous mountain boost (Erosion + Continentalness smoothly combined)
+        // Strictly continuous everywhere: 0 at cont <= -0.1 or eros >= 0.2
+        double mountainContFactor = smoothStep(-0.1, 0.4, cont);
+        double mountainErosFactor = smoothStep(0.2, -0.6, eros);
+        double peakBonus = (0.4 + 0.6 * Math.abs(weird)) * 120.0;
+        double mountainElevation = mountainContFactor * mountainErosFactor * peakBonus;
 
-        return continentalHeight + (cont > -0.04f ? hill : hill * 0.3) + (cont > 0.0f ? mountainElevation : 0);
+        return continentalHeight + hill + mountainElevation;
     }
 
     private double computeDensity(int x, int y, int z, double baseHeight) {
-        double heightOffset = (baseHeight - y) * 0.07;
+        double heightOffset = (baseHeight - y) * 0.065;
 
         float n3d = terrainNoise3D.noise3D(x, y, z, true);
         float detail = detailNoise3D.noise3D(x, y, z, true) * 0.35f;
