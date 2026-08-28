@@ -33,7 +33,7 @@ public class StructurePopulator extends Populator {
     }
 
     private int findGroundY(FullChunk chunk, int x, int z) {
-        for (int y = 255; y > 0; y--) {
+        for (int y = 319; y > -50; y--) {
             int id = chunk.getBlockId(x, y, z);
             if (id == BlockID.WATER || id == BlockID.STILL_WATER) {
                 return 0; // Water surface is NOT valid ground for land structures!
