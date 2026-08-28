@@ -1,5 +1,0 @@
-autospawn-ticks: 200
-despawn-ticks: 12000
-spawn-mobs: true
-spawn-animals: true
-worlds-spawning-disabled: "exampleworld1, exampleworld2"
