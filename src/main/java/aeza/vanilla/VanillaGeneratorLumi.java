@@ -6,13 +6,18 @@ import aeza.vanilla.generator.OverworldGenerator;
 import aeza.vanilla.generator.populator.EndStructurePopulator;
 import aeza.vanilla.generator.populator.NetherStructurePopulator;
 import aeza.vanilla.generator.structure.StructureManager;
+import cn.nukkit.Server;
 import cn.nukkit.event.EventHandler;
+import cn.nukkit.event.EventPriority;
 import cn.nukkit.event.Listener;
 import cn.nukkit.event.level.ChunkPopulateEvent;
 import cn.nukkit.event.level.LevelInitEvent;
+import cn.nukkit.event.level.LevelLoadEvent;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.level.generator.Generator;
+import cn.nukkit.level.generator.PopChunkManager;
+import cn.nukkit.math.NukkitRandom;
 import cn.nukkit.plugin.PluginBase;
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,6 +51,9 @@ public class VanillaGeneratorLumi extends PluginBase implements Listener {
 
     @Override
     public void onEnable() {
+        overrideGenerators();
+        injectIntoAllLevels();
+
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getCommandMap().register("structure", new StructureCommand("structure"));
         getServer().getCommandMap().register("stset", new StructureSetCommand("stset"));
@@ -57,11 +65,21 @@ public class VanillaGeneratorLumi extends PluginBase implements Listener {
         getLogger().info("VanillaGeneratorLumi plugin disabled!");
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onLevelInit(LevelInitEvent event) {
         Level level = event.getLevel();
         if (level != null) {
             overrideGenerators();
+            injectGenerator(level);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onLevelLoad(LevelLoadEvent event) {
+        Level level = event.getLevel();
+        if (level != null) {
+            overrideGenerators();
+            injectGenerator(level);
         }
     }
 
@@ -80,6 +98,60 @@ public class VanillaGeneratorLumi extends PluginBase implements Listener {
             netherStructurePopulator.populate(level, random, chunk.getX(), chunk.getZ(), chunk);
         } else if (dimension == Level.DIMENSION_THE_END) {
             endStructurePopulator.populate(level, random, chunk.getX(), chunk.getZ(), chunk);
+        }
+    }
+
+    public void injectIntoAllLevels() {
+        try {
+            for (Level level : getServer().getLevels().values()) {
+                injectGenerator(level);
+            }
+        } catch (Exception e) {
+            getLogger().error("Error injecting generator into loaded levels", e);
+        }
+    }
+
+    public void injectGenerator(Level level) {
+        if (level == null) return;
+        if (level.getDimension() != Level.DIMENSION_OVERWORLD) return;
+
+        try {
+            Class<? extends Generator> targetGenerator = OverworldGenerator.class;
+
+            Field generatorClassField = Level.class.getDeclaredField("generatorClass");
+            generatorClassField.setAccessible(true);
+            generatorClassField.set(level, targetGenerator);
+
+            Field generatorsField = Level.class.getDeclaredField("generators");
+            generatorsField.setAccessible(true);
+
+            ThreadLocal<Generator> customThreadLocal = new ThreadLocal<>() {
+                @Override
+                public Generator initialValue() {
+                    try {
+                        Generator generator = targetGenerator.getConstructor(Map.class).newInstance(level.requireProvider().getGeneratorOptions());
+                        NukkitRandom rand = new NukkitRandom(level.getSeed());
+                        if (Server.getInstance().isPrimaryThread()) {
+                            generator.init(level, rand);
+                        }
+                        generator.init(new PopChunkManager(level.getSeed(), level::getDimensionData), rand);
+                        return generator;
+                    } catch (Throwable t) {
+                        Server.getInstance().getLogger().logException(t);
+                        return null;
+                    }
+                }
+            };
+
+            generatorsField.set(level, customThreadLocal);
+
+            // Pre-initialize on primary thread
+            Generator gen = customThreadLocal.get();
+            if (gen != null) {
+                getLogger().info("Successfully injected OverworldGenerator into level: " + level.getName());
+            }
+        } catch (Exception e) {
+            getLogger().error("Failed to inject OverworldGenerator into level: " + level.getName(), e);
         }
     }
 
