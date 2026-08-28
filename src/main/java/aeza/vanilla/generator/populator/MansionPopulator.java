@@ -19,13 +19,18 @@ public class MansionPopulator {
         int width = 36;
         int depth = 36;
 
-        // 1. Solid Cobblestone Foundation Platform
-        for (int x = -2; x <= width + 2; x++) {
-            for (int z = -2; z <= depth + 2; z++) {
+        // 1. Cobblestone Foundation only under the walls and floor perimeter down to solid ground
+        for (int x = -1; x <= width + 1; x++) {
+            for (int z = -1; z <= depth + 1; z++) {
                 int px = startX + x;
                 int pz = startZ + z;
-                for (int y = startY - 4; y <= startY; y++) {
-                    world.setBlockAt(px, y, pz, BlockID.COBBLESTONE, 0);
+                for (int y = startY; y >= Math.max(50, startY - 6); y--) {
+                    int cur = world.getBlockIdAt(px, y, pz);
+                    if (cur == BlockID.AIR || cur == BlockID.WATER || cur == BlockID.STILL_WATER || cur == BlockID.LEAVES) {
+                        world.setBlockAt(px, y, pz, BlockID.COBBLESTONE, 0);
+                    } else {
+                        break;
+                    }
                 }
             }
         }
@@ -33,7 +38,7 @@ public class MansionPopulator {
         // 2. Main Entrance (entrance.nbt)
         NBTStructure entrance = StructureManager.getStructure("mansion/entrance");
         if (entrance != null) {
-            entrance.place(world, "mansion", startX + 12, startY + 1, startZ);
+            entrance.place(world, "mansion_piece", startX + 12, startY + 1, startZ);
         }
 
         // 3. Outer Walls & Windows (wall_flat.nbt, wall_window.nbt, wall_corner.nbt)
@@ -41,7 +46,6 @@ public class MansionPopulator {
         NBTStructure wallWindow = StructureManager.getStructure("mansion/wall_window");
         NBTStructure wallCorner = StructureManager.getStructure("mansion/wall_corner");
 
-        // Ground Floor Walls
         for (int floor = 0; floor < 3; floor++) {
             int floorY = startY + 1 + (floor * 7);
 
@@ -51,8 +55,8 @@ public class MansionPopulator {
 
                 NBTStructure w = (dx % 16 == 0 && wallWindow != null) ? wallWindow : wallFlat;
                 if (w != null) {
-                    w.place(world, "mansion", startX + dx, floorY, startZ);
-                    w.place(world, "mansion", startX + dx, floorY, startZ + depth);
+                    w.place(world, "mansion_piece", startX + dx, floorY, startZ);
+                    w.place(world, "mansion_piece", startX + dx, floorY, startZ + depth);
                 }
             }
 
@@ -60,17 +64,17 @@ public class MansionPopulator {
             for (int dz = 0; dz <= depth; dz += 8) {
                 NBTStructure w = (dz % 16 == 0 && wallWindow != null) ? wallWindow : wallFlat;
                 if (w != null) {
-                    w.place(world, "mansion", startX, floorY, startZ + dz);
-                    w.place(world, "mansion", startX + width, floorY, startZ + dz);
+                    w.place(world, "mansion_piece", startX, floorY, startZ + dz);
+                    w.place(world, "mansion_piece", startX + width, floorY, startZ + dz);
                 }
             }
 
             // Corners
             if (wallCorner != null) {
-                wallCorner.place(world, "mansion", startX, floorY, startZ);
-                wallCorner.place(world, "mansion", startX + width, floorY, startZ);
-                wallCorner.place(world, "mansion", startX, floorY, startZ + depth);
-                wallCorner.place(world, "mansion", startX + width, floorY, startZ + depth);
+                wallCorner.place(world, "mansion_piece", startX, floorY, startZ);
+                wallCorner.place(world, "mansion_piece", startX + width, floorY, startZ);
+                wallCorner.place(world, "mansion_piece", startX, floorY, startZ + depth);
+                wallCorner.place(world, "mansion_piece", startX + width, floorY, startZ + depth);
             }
         }
 
@@ -91,7 +95,7 @@ public class MansionPopulator {
                 if (room == null) room = StructureManager.getRandomStructure("mansion/2x2", random);
 
                 if (room != null) {
-                    room.place(world, "mansion", rx, floorY, rz);
+                    room.place(world, "mansion_piece", rx, floorY, rz);
                 }
             }
         }
@@ -105,22 +109,28 @@ public class MansionPopulator {
             for (int dz = -2; dz <= depth + 2; dz += 4) {
                 NBTStructure r = ((dx == -2 || dx >= width) && roofCorner != null) ? roofCorner : roof;
                 if (r != null) {
-                    r.place(world, "mansion", startX + dx, roofY, startZ + dz);
+                    r.place(world, "mansion_piece", startX + dx, roofY, startZ + dz);
                 }
             }
         }
 
-        // 6. Illagers (Evokers & Vindicators) & Loot Chests
-        if (world instanceof FullChunk chunk && chunk.getProvider() != null && chunk.getProvider().getLevel() != null) {
+        // 6. Spawn Illagers (1 Evoker, 3 Vindicators) inside once
+        FullChunk chunk = world.getChunk(startX >> 4, startZ >> 4);
+        if (chunk != null && chunk.getProvider() != null && chunk.getProvider().getLevel() != null) {
             var level = chunk.getProvider().getLevel();
 
-            // Spawn Evoker & Vindicators inside
-            Location evokerLoc = new Location(startX + 18, startY + 9, startZ + 18, level);
-            Entity.createEntity("Evoker", evokerLoc);
+            try {
+                Location evokerLoc = new Location(startX + 18, startY + 2, startZ + 18, level);
+                Entity evoker = Entity.createEntity("Evoker", evokerLoc);
+                if (evoker != null) evoker.spawnToAll();
+            } catch (Exception ignored) {}
 
-            for (int i = 0; i < 4; i++) {
-                Location vindLoc = new Location(startX + 8 + (i * 6), startY + 2, startZ + 10, level);
-                Entity.createEntity("Vindicator", vindLoc);
+            for (int i = 0; i < 3; i++) {
+                try {
+                    Location vindLoc = new Location(startX + 10 + (i * 6), startY + 2, startZ + 12, level);
+                    Entity vindicator = Entity.createEntity("Vindicator", vindLoc);
+                    if (vindicator != null) vindicator.spawnToAll();
+                } catch (Exception ignored) {}
             }
         }
 

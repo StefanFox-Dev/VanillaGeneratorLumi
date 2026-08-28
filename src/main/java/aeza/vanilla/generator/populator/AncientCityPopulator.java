@@ -4,7 +4,11 @@ import aeza.vanilla.generator.structure.LootPopulator;
 import aeza.vanilla.generator.structure.NBTStructure;
 import aeza.vanilla.generator.structure.StructureManager;
 import cn.nukkit.block.BlockID;
+import cn.nukkit.entity.Entity;
 import cn.nukkit.level.ChunkManager;
+import cn.nukkit.level.Level;
+import cn.nukkit.level.Location;
+import cn.nukkit.level.format.FullChunk;
 
 import java.util.SplittableRandom;
 
@@ -58,7 +62,7 @@ public class AncientCityPopulator {
             NBTStructure path = StructureManager.getRandomStructure("ancient_city/city_center/entrance_path", random);
             if (path == null) path = StructureManager.getRandomStructure("ancient_city/walls", random);
             if (path != null) {
-                path.place(world, "ancient_city", px, cityY, pz);
+                path.place(world, "ancient_city_piece", px, cityY, pz);
             }
 
             // Side buildings (chambers, barracks, ice box, ruins, statues)
@@ -67,7 +71,7 @@ public class AncientCityPopulator {
             if (building != null) {
                 int offX = dir[0] + (dir[0] > 0 ? 8 : -8);
                 int offZ = dir[1] + (dir[1] > 0 ? 8 : -8);
-                building.place(world, "ancient_city", startX + offX, cityY, startZ + offZ);
+                building.place(world, "ancient_city_piece", startX + offX, cityY, startZ + offZ);
             }
         }
 
@@ -111,6 +115,17 @@ public class AncientCityPopulator {
                     }
                 }
             }
+        }
+
+        // 6. Spawn the Warden at City Center
+        FullChunk chunk = world.getChunk(startX >> 4, startZ >> 4);
+        if (chunk != null && chunk.getProvider() != null && chunk.getProvider().getLevel() != null) {
+            Level lvl = chunk.getProvider().getLevel();
+            Location wardenLoc = new Location(startX, cityY + 1, startZ, lvl);
+            try {
+                Entity warden = Entity.createEntity("Warden", wardenLoc);
+                if (warden != null) warden.spawnToAll();
+            } catch (Exception ignored) {}
         }
 
         StructureManager.registerGeneratedStructure(worldName, "ancient_city", startX, cityY, startZ);

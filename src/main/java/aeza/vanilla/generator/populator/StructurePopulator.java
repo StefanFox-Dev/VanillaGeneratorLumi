@@ -157,11 +157,24 @@ public class StructurePopulator extends Populator {
             }
         }
 
-        // 7. Pillager Outpost (~every 24 chunks)
-        if (surfaceY >= 62 && ((chunkX & 23) == 7) && ((chunkZ & 23) == 15)) {
-            NBTStructure outpost = StructureManager.getRandomStructure("pillageroutpost", random);
-            if (outpost != null) {
-                outpost.place(world, "pillageroutpost", baseX + 2, surfaceY, baseZ + 2);
+        // 7. Pillager Outpost (~every 28 chunks)
+        if (surfaceY >= 62 && ((chunkX & 27) == 7) && ((chunkZ & 27) == 15)) {
+            NBTStructure watchtower = StructureManager.getStructure("pillageroutpost/watchtower");
+            if (watchtower == null) watchtower = StructureManager.getStructure("pillageroutpost/watchtower_overgrown");
+
+            if (watchtower != null) {
+                watchtower.place(world, "pillageroutpost_main", baseX + 2, surfaceY, baseZ + 2);
+
+                // Surrounding outpost features
+                NBTStructure tent = StructureManager.getRandomStructure("pillageroutpost/feature_tent", random);
+                if (tent != null) tent.place(world, "pillageroutpost_piece", baseX + 16, surfaceY, baseZ + 2);
+
+                NBTStructure cage = StructureManager.getRandomStructure("pillageroutpost/feature_cage", random);
+                if (cage != null) cage.place(world, "pillageroutpost_piece", baseX - 12, surfaceY, baseZ + 2);
+
+                NBTStructure targets = StructureManager.getStructure("pillageroutpost/feature_targets");
+                if (targets != null) targets.place(world, "pillageroutpost_piece", baseX + 2, surfaceY, baseZ + 16);
+
                 StructureManager.registerGeneratedStructure(worldName, "pillageroutpost", baseX + 2, surfaceY, baseZ + 2);
                 return;
             }

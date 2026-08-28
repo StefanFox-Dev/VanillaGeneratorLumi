@@ -17,14 +17,16 @@ public class OverworldNoiseRouter {
     private final MultiNoiseBiomeSource biomeSource;
     private final SimplexF terrainNoise3D;
     private final SimplexF detailNoise3D;
+    private final SimplexF hillNoise2D;
     private final SimplexF deepslateNoise;
 
     public OverworldNoiseRouter(long seed, MultiNoiseBiomeSource biomeSource) {
         this.biomeSource = biomeSource;
         NukkitRandom rand = new NukkitRandom(seed + 101);
-        this.terrainNoise3D = new SimplexF(rand, 4F, 2 / 4F, 1F / 160f);
-        this.detailNoise3D = new SimplexF(rand, 2F, 2 / 4F, 1F / 48f);
-        this.deepslateNoise = new SimplexF(rand, 2F, 2 / 4F, 1F / 16f);
+        this.terrainNoise3D = new SimplexF(rand, 3F, 1F / 2F, 1F / 64f);
+        this.detailNoise3D = new SimplexF(rand, 2F, 1F / 2F, 1F / 24f);
+        this.hillNoise2D = new SimplexF(rand, 4F, 1F / 2F, 1F / 128f);
+        this.deepslateNoise = new SimplexF(rand, 2F, 1F / 2F, 1F / 16f);
     }
 
     public void generateTerrain(FullChunk chunk, SplittableRandom random, int chunkX, int chunkZ) {
@@ -40,11 +42,10 @@ public class OverworldNoiseRouter {
                 float eros = biomeSource.getErosion(worldX, worldZ);
                 float weird = biomeSource.getWeirdness(worldX, worldZ);
 
-                // Compute base surface target height based on 1.18+ climate splines
-                double baseHeight = computeBaseHeight(cont, eros, weird);
+                // Compute smooth natural target height
+                double baseHeight = computeSmoothBaseHeight(worldX, worldZ, cont, eros, weird);
 
-                // Bedrock roughness at Y = -64..-60
-                int bedrockHeight = MIN_Y + random.nextInt(5);
+                int bedrockHeight = MIN_Y + random.nextInt(4);
 
                 for (int y = MAX_Y; y >= MIN_Y; y--) {
                     if (y <= bedrockHeight) {
@@ -55,9 +56,8 @@ public class OverworldNoiseRouter {
                     double density = computeDensity(worldX, y, worldZ, baseHeight, eros);
 
                     if (density > 0) {
-                        // Solid Terrain (Stone or Deepslate)
+                        // Solid Terrain
                         if (y < 0) {
-                            // Deepslate transition between Y = -8 and Y = 0
                             if (y >= -8) {
                                 float n = deepslateNoise.noise2D(worldX, worldZ, true);
                                 if (y < -4 + (int) (n * 4)) {
@@ -72,7 +72,6 @@ public class OverworldNoiseRouter {
                             chunk.setBlockId(x, y, z, BlockID.STONE);
                         }
                     } else if (y <= SEA_LEVEL) {
-                        // Water Level (Ocean / Sea)
                         chunk.setBlockId(x, y, z, BlockID.STILL_WATER);
                     } else {
                         chunk.setBlockId(x, y, z, BlockID.AIR);
@@ -82,35 +81,42 @@ public class OverworldNoiseRouter {
         }
     }
 
-    private double computeBaseHeight(float cont, float eros, float weird) {
-        // Oceans vs Inland
-        double h;
-        if (cont < -0.2f) {
-            // Deep Ocean to Ocean (-0.7 to -0.2 -> Y = 30 to 60)
-            h = 42.0 + (cont + 0.7) * 40.0;
-        } else if (cont < 0.1f) {
-            // Coast / Lowlands (-0.2 to 0.1 -> Y = 60 to 72)
-            h = 62.0 + (cont + 0.2) * 33.3;
-        } else {
-            // Inland continents (0.1 to 1.0 -> Y = 72 to 140 base)
-            h = 72.0 + (cont - 0.1) * 60.0;
+    private double computeSmoothBaseHeight(int x, int z, float cont, float eros, float weird) {
+        double height;
 
-            // Mountain peaks from low erosion & high weirdness (Peaks up to Y = 240..270)
-            if (eros < -0.2f) {
-                double mountainFactor = Math.abs(eros) * (0.5 + Math.abs(weird) * 0.8);
-                h += mountainFactor * 130.0;
+        // Multi-octave 2D rolling hills & relief noise
+        float hill = hillNoise2D.noise2D(x, z, true) * 12.0f;
+
+        if (cont < -0.18f) {
+            // Deep Ocean to Shallow Ocean (Y = 32 to 60)
+            double t = (cont + 1.0f) / 0.82f;
+            height = 32.0 + t * 28.0;
+        } else if (cont < 0.05f) {
+            // Coast / Shore / Beach (Y = 60 to 66)
+            double t = (cont + 0.18f) / 0.23f;
+            height = 60.0 + t * 6.0;
+        } else {
+            // Inland Continents (Y = 66 to 110 base + natural hills)
+            double t = (cont - 0.05f) / 0.95f;
+            height = 66.0 + t * 38.0 + hill;
+
+            // Low erosion + weirdness creates soaring mountain peaks (Y = 120..260)
+            if (eros < -0.15f) {
+                double mountainStrength = Math.abs(eros + 0.15) * 1.6;
+                double peakBonus = (0.6 + Math.abs(weird) * 0.8) * 140.0;
+                height += mountainStrength * peakBonus;
             }
         }
-        return h;
+
+        return height;
     }
 
     private double computeDensity(int x, int y, int z, double baseHeight, float eros) {
-        double heightOffset = (baseHeight - y) / (eros < -0.2f ? 40.0 : 20.0);
+        double heightOffset = (baseHeight - y) * 0.12;
 
-        // 3D Noise variation for natural slopes and overhangs
         float n3d = terrainNoise3D.noise3D(x, y, z, true);
-        float detail = detailNoise3D.noise3D(x, y, z, true) * 0.25f;
+        float detail = detailNoise3D.noise3D(x, y, z, true) * 0.35f;
 
-        return heightOffset + (n3d * 0.8) + detail;
+        return heightOffset + (n3d * 0.9) + detail;
     }
 }

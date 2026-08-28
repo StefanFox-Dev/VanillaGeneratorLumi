@@ -10,6 +10,7 @@ import aeza.vanilla.generator.populator.FeatureRulesPopulator;
 import aeza.vanilla.generator.populator.MountainBiomePopulator;
 import aeza.vanilla.generator.populator.OceanPopulator;
 import aeza.vanilla.generator.populator.OrePopulator;
+import aeza.vanilla.generator.populator.OverworldBiomeDecorator;
 import aeza.vanilla.generator.populator.StructurePopulator;
 import aeza.vanilla.generator.populator.WarmBiomePopulator;
 import aeza.vanilla.generator.surface.SurfaceSystem;
@@ -38,6 +39,7 @@ public class OverworldGenerator extends Normal {
     private WarmBiomePopulator warmBiomePopulator;
     private CaveBiomePopulator caveBiomePopulator;
     private OrePopulator orePopulator;
+    private OverworldBiomeDecorator biomeDecorator;
 
     public OverworldGenerator() {
         super();
@@ -71,6 +73,7 @@ public class OverworldGenerator extends Normal {
         this.warmBiomePopulator = new WarmBiomePopulator();
         this.caveBiomePopulator = new CaveBiomePopulator();
         this.orePopulator = new OrePopulator();
+        this.biomeDecorator = new OverworldBiomeDecorator();
     }
 
     @Override
@@ -128,6 +131,7 @@ public class OverworldGenerator extends Normal {
 
             // Populators
             this.orePopulator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);
+            this.biomeDecorator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);
             this.mountainBiomePopulator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);
             this.warmBiomePopulator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);
             this.caveBiomePopulator.populate(getChunkManager(), random, chunkX, chunkZ, chunk);

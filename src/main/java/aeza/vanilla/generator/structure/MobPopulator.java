@@ -16,7 +16,8 @@ public class MobPopulator {
 
         String cat = category.toLowerCase();
 
-        if (cat.contains("village")) {
+        // Only spawn mobs for primary structure anchors (not for every sub-block or room piece)
+        if (cat.equals("village/town_centers") || cat.equals("village")) {
             for (int i = 0; i < 3; i++) {
                 try {
                     Entity v = Entity.createEntity("Villager", loc.add(i * 2, 0, i));
@@ -27,25 +28,29 @@ public class MobPopulator {
                 Entity g = Entity.createEntity("IronGolem", loc.add(1, 0, 1));
                 if (g != null) g.spawnToAll();
             } catch (Exception ignored) {}
-        } else if (cat.contains("bastion")) {
-            for (int i = 0; i < 4; i++) {
+        } else if (cat.equals("bastion/treasure") || cat.equals("bastion")) {
+            for (int i = 0; i < 3; i++) {
                 try {
                     Entity p = Entity.createEntity("Piglin", loc.add(i * 2, 0, i));
                     if (p != null) p.spawnToAll();
                 } catch (Exception ignored) {}
             }
-        } else if (cat.contains("pillageroutpost")) {
+        } else if (cat.equals("pillageroutpost_main") || cat.equals("pillageroutpost")) {
             for (int i = 0; i < 3; i++) {
                 try {
                     Entity p = Entity.createEntity("Pillager", loc.add(i * 2, 0, i));
                     if (p != null) p.spawnToAll();
                 } catch (Exception ignored) {}
             }
-        } else if (cat.contains("mansion")) {
-            for (int i = 0; i < 2; i++) {
+        } else if (cat.equals("mansion_main")) {
+            try {
+                Entity e = Entity.createEntity("Evoker", loc);
+                if (e != null) e.spawnToAll();
+            } catch (Exception ignored) {}
+            for (int i = 0; i < 3; i++) {
                 try {
-                    Entity e = Entity.createEntity("Evoker", loc.add(i * 2, 0, i));
-                    if (e != null) e.spawnToAll();
+                    Entity v = Entity.createEntity("Vindicator", loc.add(i * 3, 0, i));
+                    if (v != null) v.spawnToAll();
                 } catch (Exception ignored) {}
             }
         }
