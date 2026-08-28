@@ -40,7 +40,7 @@ public class SurfaceSystem {
                             applyTopBlock(chunk, random, x, y, z, biome);
                         } else if (depth > 0) {
                             depth--;
-                            applyUnderBlock(chunk, random, x, y, z, biome, depth);
+                            applyUnderBlock(chunk, random, x, y, z, biome, depth, y);
                         }
                     }
                 }
@@ -49,12 +49,14 @@ public class SurfaceSystem {
     }
 
     private void applyTopBlock(FullChunk chunk, SplittableRandom random, int x, int y, int z, int biome) {
-        boolean isUnderwater = y < 62;
+        boolean isUnderwater = y < 63;
 
         if (isUnderwater) {
-            // Underwater Floor
+            // Underwater Seabed Surface
             if (biome == BiomeIds.WARM_OCEAN || biome == BiomeIds.LUKEWARM_OCEAN || biome == BiomeIds.DESERT) {
                 chunk.setBlockId(x, y, z, BlockID.SAND);
+            } else if (biome == BiomeIds.DEEP_OCEAN || biome == BiomeIds.COLD_DEEP_OCEAN || biome == BiomeIds.WARM_DEEP_OCEAN) {
+                chunk.setBlockId(x, y, z, random.nextDouble() < 0.7 ? BlockID.GRAVEL : BlockID.SAND);
             } else {
                 chunk.setBlockId(x, y, z, random.nextBoolean() ? BlockID.GRAVEL : BlockID.DIRT);
             }
@@ -94,8 +96,15 @@ public class SurfaceSystem {
             chunk.setBlockId(x, y, z, (y > 110 && random.nextBoolean()) ? BlockID.PACKED_ICE : BlockID.SNOW_BLOCK);
             return;
         }
-        if (biome == BiomeIds.JAGGED_PEAKS || biome == BiomeIds.SNOWY_SLOPES || biome == BiomeIds.ICE_PLAINS) {
+        if (biome == BiomeIds.JAGGED_PEAKS || biome == BiomeIds.SNOWY_SLOPES) {
             chunk.setBlockId(x, y, z, BlockID.SNOW_BLOCK);
+            return;
+        }
+        if (biome == BiomeIds.ICE_PLAINS || biome == BiomeIds.COLD_TAIGA) {
+            chunk.setBlockId(x, y, z, BlockID.GRASS);
+            if (y + 1 < 320 && chunk.getBlockId(x, y + 1, z) == BlockID.AIR) {
+                chunk.setBlockId(x, y + 1, z, BlockID.SNOW_LAYER);
+            }
             return;
         }
 
@@ -115,10 +124,19 @@ public class SurfaceSystem {
         chunk.setBlockId(x, y, z, BlockID.GRASS);
     }
 
-    private void applyUnderBlock(FullChunk chunk, SplittableRandom random, int x, int y, int z, int biome, int depthRemaining) {
+    private void applyUnderBlock(FullChunk chunk, SplittableRandom random, int x, int y, int z, int biome, int depthRemaining, int currentY) {
+        if (currentY < 63) {
+            // Underwater sub-layers: Gravel, Sand, or Sandstone
+            if (biome == BiomeIds.WARM_OCEAN || biome == BiomeIds.LUKEWARM_OCEAN || biome == BiomeIds.DESERT) {
+                chunk.setBlockId(x, y, z, depthRemaining > 1 ? BlockID.SAND : BlockID.SANDSTONE);
+            } else {
+                chunk.setBlockId(x, y, z, random.nextDouble() < 0.6 ? BlockID.GRAVEL : BlockID.STONE);
+            }
+            return;
+        }
+
         if (isBadlands(biome)) {
-            // Terracotta Color Banding
-            int bandColor = getTerracottaBandColor(y);
+            int bandColor = getTerracottaBandColor(currentY);
             if (bandColor == 0) {
                 chunk.setBlockId(x, y, z, BlockID.TERRACOTTA);
             } else {
@@ -137,7 +155,7 @@ public class SurfaceSystem {
         }
 
         if (biome == BiomeIds.FROZEN_PEAKS || biome == BiomeIds.JAGGED_PEAKS) {
-            chunk.setBlockId(x, y, z, (y > 100 && random.nextDouble() < 0.4) ? BlockID.PACKED_ICE : BlockID.STONE);
+            chunk.setBlockId(x, y, z, (currentY > 100 && random.nextDouble() < 0.4) ? BlockID.PACKED_ICE : BlockID.STONE);
             return;
         }
 
