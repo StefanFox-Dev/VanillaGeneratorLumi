@@ -12,7 +12,7 @@ public class OverworldNoiseRouter {
 
     public static final int SEA_LEVEL = 63;
     public static final int MIN_Y = -64;
-    public static final int MAX_Y = 320;
+    public static final int MAX_Y = 319;
 
     private final MultiNoiseBiomeSource biomeSource;
     private final SimplexF terrainNoise3D;

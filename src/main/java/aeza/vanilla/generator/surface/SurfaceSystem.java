@@ -27,7 +27,7 @@ public class SurfaceSystem {
 
                 int depth = -1;
 
-                for (int y = 320; y >= -64; y--) {
+                for (int y = 319; y >= -64; y--) {
                     int mat = chunk.getBlockId(x, y, z);
 
                     if (mat == BlockID.AIR || mat == BlockID.WATER || mat == BlockID.STILL_WATER) {
