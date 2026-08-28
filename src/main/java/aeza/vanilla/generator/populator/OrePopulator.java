@@ -18,14 +18,15 @@ public class OrePopulator extends Populator {
 
     public OrePopulator() {
         this(new OreType[]{
-                new OreType(BlockID.COAL_ORE, 20, 17, 0, 128),
-                new OreType(BlockID.IRON_ORE, 20, 9, 0, 64),
-                new OreType(BlockID.GOLD_ORE, 2, 9, 0, 32),
-                new OreType(BlockID.REDSTONE_ORE, 8, 8, 0, 16),
-                new OreType(BlockID.DIAMOND_ORE, 1, 8, 0, 16),
-                new OreType(BlockID.LAPIS_ORE, 1, 7, 0, 32),
-                new OreType(BlockID.GRAVEL, 8, 33, 0, 128),
-                new OreType(BlockID.DIRT, 10, 33, 0, 128)
+                // 1.18+ / 1.20+ Modern Ore Distribution
+                new OreType(BlockID.COAL_ORE, 30, 17, 0, 256),
+                new OreType(BlockID.IRON_ORE, 24, 9, -64, 256),
+                new OreType(BlockID.GOLD_ORE, 6, 9, -64, 32),
+                new OreType(BlockID.REDSTONE_ORE, 14, 8, -64, 15),
+                new OreType(BlockID.DIAMOND_ORE, 8, 8, -64, 16),
+                new OreType(BlockID.LAPIS_ORE, 4, 7, -64, 64),
+                new OreType(BlockID.GRAVEL, 8, 33, -64, 128),
+                new OreType(BlockID.DIRT, 10, 33, -64, 128)
         });
     }
 

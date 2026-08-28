@@ -7,14 +7,14 @@ import cn.nukkit.level.format.FullChunk;
 import java.util.SplittableRandom;
 
 public class CaveGenerator {
-    private static final double CAVE_FREQUENCY = 0.06;
-    private static final double CAVERN_FREQUENCY = 0.01;
+    private static final double CAVE_FREQUENCY = 0.08;
+    private static final double CAVERN_FREQUENCY = 0.015;
     private static final int TUNNEL_LENGTH_MIN = 40;
-    private static final int TUNNEL_LENGTH_MAX = 120;
-    private static final int CAVERN_SIZE_MIN = 4;
-    private static final int CAVERN_SIZE_MAX = 9;
-    private static final int MIN_CAVE_Y = 5;
-    private static final int MAX_CAVE_Y = 55;
+    private static final int TUNNEL_LENGTH_MAX = 140;
+    private static final int CAVERN_SIZE_MIN = 5;
+    private static final int CAVERN_SIZE_MAX = 12;
+    private static final int MIN_CAVE_Y = -58;
+    private static final int MAX_CAVE_Y = 160;
 
     private static final boolean[] CARVABLE_BLOCKS = new boolean[1024];
 
@@ -26,6 +26,8 @@ public class CaveGenerator {
         CARVABLE_BLOCKS[BlockID.SAND] = true;
         CARVABLE_BLOCKS[BlockID.SANDSTONE] = true;
         CARVABLE_BLOCKS[BlockID.DEEPSLATE] = true;
+        CARVABLE_BLOCKS[BlockID.TUFF] = true;
+        CARVABLE_BLOCKS[BlockID.CALCITE] = true;
     }
 
     private static boolean isCarvable(int id) {
@@ -82,9 +84,9 @@ public class CaveGenerator {
 
         for (int i = 0; i < length; i++) {
             double progress = i / (double) length;
-            double baseRadius = 1.3 + rng.nextDouble() * 1.2;
-            double sizeVariation = Math.sin(progress * Math.PI * 2.4) * 0.28 + (rng.nextDouble() - 0.5) * 0.3;
-            double radius = Math.max(1.1, baseRadius + sizeVariation);
+            double baseRadius = 1.4 + rng.nextDouble() * 1.4;
+            double sizeVariation = Math.sin(progress * Math.PI * 2.4) * 0.35 + (rng.nextDouble() - 0.5) * 0.3;
+            double radius = Math.max(1.2, baseRadius + sizeVariation);
 
             carveSphere(chunk, (int) Math.round(x), (int) Math.round(y), (int) Math.round(z), (float) radius, targetChunkX, targetChunkZ);
 
@@ -119,8 +121,8 @@ public class CaveGenerator {
     private void carveSphere(FullChunk chunk, int centerX, int centerY, int centerZ, float radius, int targetChunkX, int targetChunkZ) {
         int minX = (int) Math.floor(centerX - radius);
         int maxX = (int) Math.ceil(centerX + radius);
-        int minY = Math.max(1, (int) Math.floor(centerY - radius));
-        int maxY = Math.min(250, (int) Math.ceil(centerY + radius));
+        int minY = Math.max(-60, (int) Math.floor(centerY - radius));
+        int maxY = Math.min(300, (int) Math.ceil(centerY + radius));
         int minZ = (int) Math.floor(centerZ - radius);
         int maxZ = (int) Math.ceil(centerZ + radius);
 
@@ -161,8 +163,8 @@ public class CaveGenerator {
     private void carveEllipsoid(FullChunk chunk, int centerX, int centerY, int centerZ, float radX, float radY, float radZ, int targetChunkX, int targetChunkZ) {
         int minX = (int) Math.floor(centerX - radX);
         int maxX = (int) Math.ceil(centerX + radX);
-        int minY = Math.max(1, (int) Math.floor(centerY - radY));
-        int maxY = Math.min(250, (int) Math.ceil(centerY + radY));
+        int minY = Math.max(-60, (int) Math.floor(centerY - radY));
+        int maxY = Math.min(300, (int) Math.ceil(centerY + radY));
         int minZ = (int) Math.floor(centerZ - radZ);
         int maxZ = (int) Math.ceil(centerZ + radZ);
 
@@ -201,7 +203,7 @@ public class CaveGenerator {
     private void applyLavaPools(FullChunk chunk) {
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
-                for (int y = 1; y <= 10; y++) {
+                for (int y = -59; y <= -54; y++) {
                     if (chunk.getBlockId(x, y, z) == BlockID.AIR) {
                         chunk.setBlockId(x, y, z, BlockID.STILL_LAVA);
                     }
