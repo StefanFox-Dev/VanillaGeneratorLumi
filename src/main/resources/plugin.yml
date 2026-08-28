@@ -1,5 +1,5 @@
 name: VanillaGeneratorLumi
-version: 1.0.0
+version: 0.0.3-pre
 main: aeza.vanilla.VanillaGeneratorLumi
 author: Community
 api: ["1.0.0"]

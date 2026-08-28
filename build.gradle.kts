@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "aeza.vanilla"
-version = "1.0.0-SNAPSHOT"
+version = "0.0.3-pre"
 
 java {
     toolchain {
